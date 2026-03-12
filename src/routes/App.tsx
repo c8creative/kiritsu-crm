@@ -1,0 +1,43 @@
+
+import { Navigate, Route, Routes } from 'react-router-dom'
+import Shell from '../ui/Shell'
+import AuthPage from './AuthPage'
+import InboxPage from './InboxPage'
+import PipelinePage from './PipelinePage'
+import AccountsPage from './AccountsPage'
+import AccountDetailPage from './AccountDetailPage'
+import FollowUpsPage from './FollowUpsPage'
+import JobsPage from './JobsPage'
+import JobDetailPage from './JobDetailPage'
+import { useSession } from '../ui/useSession'
+
+export default function App() {
+  const { session, loading } = useSession()
+
+  if (loading) return <div style={{ padding: 20 }}>Loading…</div>
+
+  if (!session) {
+    return (
+      <Routes>
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="*" element={<Navigate to="/auth" replace />} />
+      </Routes>
+    )
+  }
+
+  return (
+    <Shell>
+      <Routes>
+        <Route path="/" element={<Navigate to="/inbox" replace />} />
+        <Route path="/inbox" element={<InboxPage />} />
+        <Route path="/pipeline" element={<PipelinePage />} />
+        <Route path="/accounts" element={<AccountsPage />} />
+        <Route path="/accounts/:id" element={<AccountDetailPage />} />
+        <Route path="/followups" element={<FollowUpsPage />} />
+        <Route path="/jobs" element={<JobsPage />} />
+        <Route path="/jobs/:id" element={<JobDetailPage />} />
+        <Route path="*" element={<Navigate to="/inbox" replace />} />
+      </Routes>
+    </Shell>
+  )
+}
