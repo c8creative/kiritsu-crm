@@ -1,6 +1,7 @@
 
 import { useState } from 'react'
 import { signIn } from '../lib/db'
+import { auth } from '../lib/firebase'
 
 export default function AuthPage() {
   const [email, setEmail] = useState('')
@@ -25,6 +26,15 @@ export default function AuthPage() {
     <div style={{ maxWidth: 420, margin: '10vh auto' }} className="card">
       <div className="h1">Kiritsu CRM Lite</div>
       <p style={{ color: 'var(--muted)', marginTop: 0 }}>Single-user login (Firebase Auth)</p>
+      
+      {!auth && (
+        <div style={{ backgroundColor: 'var(--background)', border: '1px solid var(--danger)', padding: 12, borderRadius: 6, marginBottom: 16 }}>
+          <strong style={{ color: 'var(--danger)' }}>Firebase Config Missing</strong>
+          <p style={{ margin: '4px 0 0 0', fontSize: 13, color: 'var(--muted)' }}>
+            Please add your VITE_FIREBASE_* variables to your .env file to run the app.
+          </p>
+        </div>
+      )}
       <form onSubmit={onSubmit}>
         <div style={{ marginBottom: 10 }}>
           <div className="label">Email</div>

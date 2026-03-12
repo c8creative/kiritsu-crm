@@ -11,7 +11,7 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID as string,
 }
 
-const app = initializeApp(firebaseConfig)
-
-export const db = getFirestore(app)
-export const auth = getAuth(app)
+// We only initialize if the config exists to prevent blank screens
+export const app = firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null
+export const db = app ? getFirestore(app) : null as any
+export const auth = app ? getAuth(app) : null as any
