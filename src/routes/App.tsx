@@ -1,6 +1,5 @@
-
 import { Navigate, Route, Routes } from 'react-router-dom'
-import Shell from '../ui/Shell'
+import DefaultLayout from '../layout/DefaultLayout'
 import AuthPage from './AuthPage'
 import InboxPage from './InboxPage'
 import PipelinePage from './PipelinePage'
@@ -26,9 +25,9 @@ export default function App() {
   }
 
   return (
-    <Shell>
+    <DefaultLayout>
       <Routes>
-        <Route path="/" element={<Navigate to="/inbox" replace />} />
+        <Route path="/" element={<Navigate to="/followups" replace />} />
         <Route path="/inbox" element={<InboxPage />} />
         <Route path="/pipeline" element={<PipelinePage />} />
         <Route path="/accounts" element={<AccountsPage />} />
@@ -38,6 +37,6 @@ export default function App() {
         <Route path="/jobs/:id" element={<JobDetailPage />} />
         <Route path="*" element={<Navigate to="/inbox" replace />} />
       </Routes>
-    </Shell>
+    </DefaultLayout>
   )
 }

@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from 'react'
 import { listOpportunities, PIPELINE_STAGES, updateOpportunityStage, setOpportunityFollowUp } from '../lib/db'
 import type { Opportunity } from '../lib/types'
@@ -35,17 +34,19 @@ export default function PipelinePage() {
   }
 
   return (
-    <div>
-      <div className="topbar">
-        <div>
-          <h1 className="h1">Pipeline</h1>
-          <div style={{ color: 'var(--muted)', fontSize: 12 }}>Drag cards between stages.</div>
-        </div>
+    <>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-title-md2 font-semibold text-black dark:text-white">
+          Pipeline
+        </h2>
+        <span className="text-sm font-medium text-body-color dark:text-bodydark">
+          Drag cards between stages (Desktop) or use dropdown (Mobile).
+        </span>
       </div>
 
-      {err && <div style={{ color: 'var(--danger)' }}>{err}</div>}
+      {err && <div className="mb-4 text-meta-1">{err}</div>}
 
       <Kanban stages={PIPELINE_STAGES} itemsByStage={byStage} onMove={onMove} onFollowUp={onFollowUp} />
-    </div>
+    </>
   )
 }

@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "kiritsu-crm-lite"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

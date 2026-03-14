@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { addActivity, addContact, addLocation, getAccount } from '../lib/db'
@@ -20,7 +19,7 @@ export default function AccountDetailPage() {
   }, [id])
 
   if (!id) return null
-  if (!data) return <div>Loading…</div>
+  if (!data) return <div className="p-6">Loading…</div>
 
   const { account, contacts, locations, opps, activities, jobs } = data
   const primaryOpp = opps?.[0]?.id ?? null
@@ -90,164 +89,185 @@ export default function AccountDetailPage() {
   }
 
   return (
-    <div>
-      <div className="topbar">
+    <>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="h1">{account.name}</h1>
-          <div className="pill">{account.status}</div>
+          <h2 className="text-title-md2 font-semibold text-black dark:text-white">
+            {account.name}
+          </h2>
+        </div>
+        <div>
+          <span className="inline-flex rounded-full bg-success/10 py-1 px-3 text-sm font-medium text-success">
+            {account.status}
+          </span>
         </div>
       </div>
 
-      {err && <div style={{ color: 'var(--danger)', marginBottom: 10 }}>{err}</div>}
+      {err && <div className="mb-4 text-meta-1">{err}</div>}
 
-      <div className="split">
-        <div className="card">
-          <strong>Timeline</strong>
-          <form onSubmit={onAddNote} style={{ marginTop: 10 }}>
-            <div className="row">
-              <div style={{ flex: 1 }}>
-                <div className="label">Summary</div>
-                <input className="input" name="summary" placeholder="Spoke with GM…" />
+      <div className="grid grid-cols-1 gap-9 mt-4 lg:grid-cols-2">
+        <div className="flex flex-col gap-9">
+          <div className="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5">
+            <h4 className="mb-6 text-xl font-semibold text-black dark:text-white">Timeline</h4>
+            <form onSubmit={onAddNote} className="flex flex-col gap-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-black dark:text-white">Summary</label>
+                <input className="w-full rounded border-[1.5px] border-stroke bg-transparent py-2.5 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" name="summary" placeholder="Spoke with GM…" />
               </div>
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <div className="label">Details</div>
-              <textarea className="input" name="details" rows={3} placeholder="What happened / next step" />
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <button className="btn primary" disabled={busy}>Add note</button>
-            </div>
-          </form>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-black dark:text-white">Details</label>
+                <textarea className="w-full rounded border-[1.5px] border-stroke bg-transparent py-2.5 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" name="details" rows={3} placeholder="What happened / next step" />
+              </div>
+              <button className="flex w-full justify-center rounded bg-primary py-3 font-medium text-gray hover:bg-opacity-90" disabled={busy}>Add note</button>
+            </form>
 
-          <div style={{ marginTop: 14 }}>
-            {(activities ?? []).map((a: any) => (
-              <div key={a.id} className="cardItem">
-                <strong>{a.summary || a.activity_type}</strong>
-                <div className="meta">{new Date(a.occurred_at).toLocaleString()}</div>
-                {a.details && <div style={{ marginTop: 8, color: 'var(--muted)', fontSize: 13 }}>{a.details}</div>}
-              </div>
-            ))}
-            {(activities ?? []).length === 0 && <div style={{ color: 'var(--muted)' }}>No activity yet.</div>}
+            <div className="mt-8 flex flex-col gap-4">
+              {(activities ?? []).map((a: any) => (
+                <div key={a.id} className="rounded-sm border border-stroke p-4 dark:border-strokedark">
+                  <strong className="block font-medium text-black dark:text-white">{a.summary || a.activity_type}</strong>
+                  <div className="text-xs text-body-color dark:text-bodydark mt-1">{new Date(a.occurred_at).toLocaleString()}</div>
+                  {a.details && <div className="mt-3 text-sm text-black dark:text-white">{a.details}</div>}
+                </div>
+              ))}
+              {(activities ?? []).length === 0 && <div className="text-body-color dark:text-bodydark pb-4">No activity yet.</div>}
+            </div>
           </div>
         </div>
 
-        <div className="card">
-          <strong>Contacts</strong>
-          <table className="table" style={{ marginTop: 10 }}>
-            <thead>
-              <tr><th>Name</th><th>Role</th><th>Contact</th></tr>
-            </thead>
-            <tbody>
-              {(contacts ?? []).map((c: any) => (
-                <tr key={c.id}>
-                  <td>{c.name}</td>
-                  <td style={{ color: 'var(--muted)' }}>{c.role ?? '—'}</td>
-                  <td style={{ color: 'var(--muted)' }}>{c.email || c.phone || '—'}</td>
-                </tr>
-              ))}
-              {(contacts ?? []).length === 0 && <tr><td colSpan={3} style={{ color: 'var(--muted)' }}>No contacts yet.</td></tr>}
-            </tbody>
-          </table>
-
-          <form onSubmit={onAddContact} style={{ marginTop: 10 }}>
-            <div className="row">
-              <div style={{ flex: 1 }}>
-                <div className="label">Name</div>
-                <input className="input" name="name" required />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div className="label">Role</div>
-                <input className="input" name="role" placeholder="Owner / GM" />
-              </div>
-            </div>
-            <div className="row" style={{ marginTop: 10 }}>
-              <div style={{ flex: 1 }}>
-                <div className="label">Phone</div>
-                <input className="input" name="phone" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div className="label">Email</div>
-                <input className="input" name="email" />
-              </div>
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <button className="btn" disabled={busy}>Add contact</button>
-            </div>
-          </form>
-
-          <div style={{ marginTop: 16 }}>
-            <strong>Locations</strong>
-            <table className="table" style={{ marginTop: 10 }}>
-              <thead>
-                <tr><th>Label</th><th>Address</th></tr>
-              </thead>
-              <tbody>
-                {(locations ?? []).map((l: any) => (
-                  <tr key={l.id}>
-                    <td>{l.label || '—'}</td>
-                    <td style={{ color: 'var(--muted)' }}>{[l.address1, l.city, l.state, l.zip].filter(Boolean).join(', ') || '—'}</td>
+        <div className="flex flex-col gap-9">
+          <div className="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5">
+            <h4 className="mb-6 text-xl font-semibold text-black dark:text-white">Contacts</h4>
+            <div className="max-w-full overflow-x-auto">
+              <table className="w-full table-auto mb-4">
+                <thead>
+                  <tr className="bg-gray-2 text-left dark:bg-meta-4">
+                    <th className="py-2 px-4 font-medium text-black dark:text-white">Name</th>
+                    <th className="py-2 px-4 font-medium text-black dark:text-white">Role</th>
+                    <th className="py-2 px-4 font-medium text-black dark:text-white">Contact</th>
                   </tr>
-                ))}
-                {(locations ?? []).length === 0 && <tr><td colSpan={2} style={{ color: 'var(--muted)' }}>No locations yet.</td></tr>}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {(contacts ?? []).map((c: any, key: number) => (
+                    <tr key={c.id} className={key === contacts.length - 1 ? '' : 'border-b border-stroke dark:border-strokedark'}>
+                      <td className="py-3 px-4 text-black dark:text-white">{c.name}</td>
+                      <td className="py-3 px-4 text-black dark:text-white">{c.role ?? '—'}</td>
+                      <td className="py-3 px-4 text-body-color dark:text-bodydark">{c.email || c.phone || '—'}</td>
+                    </tr>
+                  ))}
+                  {(contacts ?? []).length === 0 && <tr><td colSpan={3} className="py-3 px-4 text-body-color dark:text-bodydark">No contacts yet.</td></tr>}
+                </tbody>
+              </table>
+            </div>
 
-            <form onSubmit={onAddLocation} style={{ marginTop: 10 }}>
-              <div className="row">
-                <div style={{ flex: 1 }}>
-                  <div className="label">Label</div>
-                  <input className="input" name="label" placeholder="Downtown" />
+            <form onSubmit={onAddContact} className="mt-4 flex flex-col gap-4 border-t border-stroke pt-4 dark:border-strokedark">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <label className="mb-2 block text-sm font-medium text-black dark:text-white">Name</label>
+                  <input className="w-full rounded border-[1.5px] border-stroke bg-transparent py-2.5 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" name="name" required />
                 </div>
-                <div style={{ flex: 2 }}>
-                  <div className="label">Address</div>
-                  <input className="input" name="address1" placeholder="123 King St" />
-                </div>
-              </div>
-              <div className="row" style={{ marginTop: 10 }}>
-                <div style={{ flex: 1 }}>
-                  <div className="label">City</div>
-                  <input className="input" name="city" />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div className="label">State</div>
-                  <input className="input" name="state" defaultValue="VA" />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div className="label">ZIP</div>
-                  <input className="input" name="zip" />
+                <div className="flex-1">
+                  <label className="mb-2 block text-sm font-medium text-black dark:text-white">Role</label>
+                  <input className="w-full rounded border-[1.5px] border-stroke bg-transparent py-2.5 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" name="role" placeholder="Owner / GM" />
                 </div>
               </div>
-              <div style={{ marginTop: 10 }}>
-                <div className="label">Notes</div>
-                <textarea className="input" name="notes" rows={2} placeholder="Glass notes / access" />
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <label className="mb-2 block text-sm font-medium text-black dark:text-white">Phone</label>
+                  <input className="w-full rounded border-[1.5px] border-stroke bg-transparent py-2.5 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" name="phone" />
+                </div>
+                <div className="flex-1">
+                  <label className="mb-2 block text-sm font-medium text-black dark:text-white">Email</label>
+                  <input className="w-full rounded border-[1.5px] border-stroke bg-transparent py-2.5 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" name="email" />
+                </div>
               </div>
-              <div style={{ marginTop: 10 }}>
-                <button className="btn" disabled={busy}>Add location</button>
-              </div>
+              <button className="flex w-full justify-center rounded border border-stroke bg-transparent py-3 font-medium hover:bg-gray transition dark:border-strokedark dark:hover:bg-meta-4" disabled={busy}>Add contact</button>
             </form>
           </div>
 
-          <div style={{ marginTop: 16 }}>
-            <strong>Jobs</strong>
-            <div style={{ color: 'var(--muted)', fontSize: 12 }}>
+          <div className="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5">
+            <h4 className="mb-6 text-xl font-semibold text-black dark:text-white">Locations</h4>
+            <div className="max-w-full overflow-x-auto">
+              <table className="w-full table-auto mb-4">
+                <thead>
+                  <tr className="bg-gray-2 text-left dark:bg-meta-4">
+                    <th className="py-2 px-4 font-medium text-black dark:text-white">Label</th>
+                    <th className="py-2 px-4 font-medium text-black dark:text-white">Address</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(locations ?? []).map((l: any, key: number) => (
+                    <tr key={l.id} className={key === locations.length - 1 ? '' : 'border-b border-stroke dark:border-strokedark'}>
+                      <td className="py-3 px-4 text-black dark:text-white">{l.label || '—'}</td>
+                      <td className="py-3 px-4 text-body-color dark:text-bodydark">{[l.address1, l.city, l.state, l.zip].filter(Boolean).join(', ') || '—'}</td>
+                    </tr>
+                  ))}
+                  {(locations ?? []).length === 0 && <tr><td colSpan={2} className="py-3 px-4 text-body-color dark:text-bodydark">No locations yet.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+
+            <form onSubmit={onAddLocation} className="mt-4 flex flex-col gap-4 border-t border-stroke pt-4 dark:border-strokedark">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="sm:w-1/3">
+                  <label className="mb-2 block text-sm font-medium text-black dark:text-white">Label</label>
+                  <input className="w-full rounded border-[1.5px] border-stroke bg-transparent py-2.5 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" name="label" placeholder="Downtown" />
+                </div>
+                <div className="sm:w-2/3">
+                  <label className="mb-2 block text-sm font-medium text-black dark:text-white">Address</label>
+                  <input className="w-full rounded border-[1.5px] border-stroke bg-transparent py-2.5 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" name="address1" placeholder="123 King St" />
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <label className="mb-2 block text-sm font-medium text-black dark:text-white">City</label>
+                  <input className="w-full rounded border-[1.5px] border-stroke bg-transparent py-2.5 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" name="city" />
+                </div>
+                <div className="flex-1">
+                  <label className="mb-2 block text-sm font-medium text-black dark:text-white">State</label>
+                  <input className="w-full rounded border-[1.5px] border-stroke bg-transparent py-2.5 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" name="state" defaultValue="VA" />
+                </div>
+                <div className="flex-1">
+                  <label className="mb-2 block text-sm font-medium text-black dark:text-white">ZIP</label>
+                  <input className="w-full rounded border-[1.5px] border-stroke bg-transparent py-2.5 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" name="zip" />
+                </div>
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-black dark:text-white">Notes</label>
+                <textarea className="w-full rounded border-[1.5px] border-stroke bg-transparent py-2.5 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" name="notes" rows={2} placeholder="Glass notes / access" />
+              </div>
+              <button className="flex w-full justify-center rounded border border-stroke bg-transparent py-3 font-medium hover:bg-gray transition dark:border-strokedark dark:hover:bg-meta-4" disabled={busy}>Add location</button>
+            </form>
+          </div>
+
+          <div className="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5">
+            <h4 className="border-b border-stroke pb-3 text-xl font-semibold text-black dark:text-white dark:border-strokedark">Jobs</h4>
+            <div className="mt-2 text-sm text-body-color dark:text-bodydark">
               Jobs are managed from the Jobs page (link in sidebar).
             </div>
-            <table className="table" style={{ marginTop: 10 }}>
-              <thead><tr><th>Frequency</th><th>Price/Visit</th><th>Active</th></tr></thead>
-              <tbody>
-                {(jobs ?? []).slice(0,5).map((j: any) => (
-                  <tr key={j.id}>
-                    <td>{j.frequency}</td>
-                    <td style={{ color: 'var(--muted)' }}>{j.price_per_visit ?? '—'}</td>
-                    <td style={{ color: 'var(--muted)' }}>{j.active ? 'Yes' : 'No'}</td>
+            <div className="max-w-full overflow-x-auto mt-4">
+              <table className="w-full table-auto mb-4">
+                <thead>
+                  <tr className="bg-gray-2 text-left dark:bg-meta-4">
+                    <th className="py-2 px-4 font-medium text-black dark:text-white">Frequency</th>
+                    <th className="py-2 px-4 font-medium text-black dark:text-white">Price/Visit</th>
+                    <th className="py-2 px-4 font-medium text-black dark:text-white">Active</th>
                   </tr>
-                ))}
-                {(jobs ?? []).length === 0 && <tr><td colSpan={3} style={{ color: 'var(--muted)' }}>No jobs yet.</td></tr>}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {(jobs ?? []).slice(0,5).map((j: any, key: number) => (
+                    <tr key={j.id} className={key === jobs.length - 1 ? '' : 'border-b border-stroke dark:border-strokedark'}>
+                      <td className="py-3 px-4 text-black dark:text-white">{j.frequency}</td>
+                      <td className="py-3 px-4 text-body-color dark:text-bodydark">{j.price_per_visit ?? '—'}</td>
+                      <td className="py-3 px-4 text-body-color dark:text-bodydark">{j.active ? 'Yes' : 'No'}</td>
+                    </tr>
+                  ))}
+                  {(jobs ?? []).length === 0 && <tr><td colSpan={3} className="py-3 px-4 text-body-color dark:text-bodydark">No jobs yet.</td></tr>}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
