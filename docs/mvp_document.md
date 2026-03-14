@@ -34,7 +34,8 @@ The MVP currently encompasses the following functional modules:
 ## Technical Architecture & Infrastructure
 
 - **Frontend:** React + Vite, built as a single-page application (SPA).
-- **Styling:** Tailwind CSS integrated with the TailAdmin React template for a modern, responsive, and premium UI.
+- **Branding**: Squeegee Samurai Brand Guide (Typography: Nunito/Inter, Colors: Aka/Sumi/Washi).
+- **Styling:** Tailwind CSS + TailAdmin React template.
 - **Backend / Database:** 
   - *Current:* **Firebase Firestore** for database, capturing all relational patterns (Leads, Accounts, Jobs) through NoSQL document collections.
   - *Historical Context:* Originally designed with a Postgres schema on Supabase (with complex Triggers and Row Level Security). It was migrated to Firebase to avoid the Supabase free-tier database sleep cycle which disrupted usability.

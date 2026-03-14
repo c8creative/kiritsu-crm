@@ -10,7 +10,7 @@ import {
   orderBy,
   serverTimestamp
 } from 'firebase/firestore'
-import { signInWithEmailAndPassword, signOut as fSignOut } from 'firebase/auth'
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as fSignOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { db, auth } from './firebase'
 import type { Lead, Account, Opportunity, Job, Visit } from './types'
 
@@ -22,15 +22,35 @@ export async function signIn(email: string, password: string) {
   return signInWithEmailAndPassword(auth, email, password)
 }
 
+export async function signUp(email: string, password: string) {
+  return createUserWithEmailAndPassword(auth, email, password)
+}
+
+export async function signInWithGoogle() {
+  const provider = new GoogleAuthProvider()
+  return signInWithPopup(auth, provider)
+}
+
 export async function signOut() {
   return fSignOut(auth)
 }
 
 // Leads
 export async function listLeads(): Promise<Lead[]> {
-  const q = query(collection(db, 'leads'), orderBy('created_at', 'desc'))
-  const snapshot = await getDocs(q)
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead))
+  const owner_id = await getSessionUserId()
+  if (!owner_id) return []
+  try {
+    const q = query(
+      collection(db, 'leads'),
+      where('owner_id', '==', owner_id),
+      orderBy('created_at', 'desc')
+    )
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead))
+  } catch (err) {
+    console.error('Error listing leads:', err)
+    throw err
+  }
 }
 
 export async function createLead(input: Omit<Lead, 'id'|'owner_id'|'created_at'> & { owner_id?: string }) {
@@ -73,6 +93,8 @@ export async function convertLeadToAccount(leadId: string) {
     owner_id,
     lead_id: leadId,
     account_id: accRef.id,
+    account_name: lead.name,
+    lead_source: lead.source,
     stage: 'new',
     probability: 25,
     created_at: new Date().toISOString()
@@ -84,7 +106,13 @@ export async function convertLeadToAccount(leadId: string) {
 
 // Accounts
 export async function listAccounts(): Promise<Account[]> {
-  const q = query(collection(db, 'accounts'), orderBy('created_at', 'desc'))
+  const owner_id = await getSessionUserId()
+  if (!owner_id) return []
+  const q = query(
+    collection(db, 'accounts'),
+    where('owner_id', '==', owner_id),
+    orderBy('created_at', 'desc')
+  )
   const snapshot = await getDocs(q)
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Account))
 }
@@ -140,17 +168,23 @@ export async function addActivity(account_id: string, opportunity_id: string | n
 
 // Opportunities / Pipeline
 export const PIPELINE_STAGES = [
-  { key: 'new', label: 'New' },
-  { key: 'contacted', label: 'Contacted' },
-  { key: 'walkthrough', label: 'Walkthrough Scheduled' },
-  { key: 'quote_sent', label: 'Quote Sent' },
-  { key: 'negotiation', label: 'Negotiation' },
-  { key: 'won', label: 'Won (Recurring)' },
-  { key: 'lost', label: 'Lost / Not Now' },
+  { key: 'new', label: 'New', icon: '✨' },
+  { key: 'contacted', label: 'Contacted', icon: '📞' },
+  { key: 'walkthrough', label: 'Walkthrough Scheduled', icon: '🗓️' },
+  { key: 'quote_sent', label: 'Quote Sent', icon: '📄' },
+  { key: 'negotiation', label: 'Negotiation', icon: '🤝' },
+  { key: 'won', label: 'Won (Recurring)', icon: '✅' },
+  { key: 'lost', label: 'Lost / Not Now', icon: '❌' },
 ] as const
 
 export async function listOpportunities(): Promise<Opportunity[]> {
-  const q = query(collection(db, 'opportunities'), orderBy('created_at', 'desc'))
+  const owner_id = await getSessionUserId()
+  if (!owner_id) return []
+  const q = query(
+    collection(db, 'opportunities'),
+    where('owner_id', '==', owner_id),
+    orderBy('created_at', 'desc')
+  )
   const snapshot = await getDocs(q)
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity))
 }
@@ -170,14 +204,27 @@ export async function setOpportunityFollowUp(id: string, next_follow_up_date: st
 }
 
 export async function listFollowUps(): Promise<Opportunity[]> {
-  const q = query(collection(db, 'opportunities'), where('next_follow_up_date', '!=', null), orderBy('next_follow_up_date', 'asc'))
+  const owner_id = await getSessionUserId()
+  if (!owner_id) return []
+  const q = query(
+    collection(db, 'opportunities'),
+    where('owner_id', '==', owner_id),
+    where('next_follow_up_date', '!=', null),
+    orderBy('next_follow_up_date', 'asc')
+  )
   const snapshot = await getDocs(q)
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity))
 }
 
 // Jobs
 export async function listJobs(): Promise<Job[]> {
-  const q = query(collection(db, 'jobs'), orderBy('created_at', 'desc'))
+  const owner_id = await getSessionUserId()
+  if (!owner_id) return []
+  const q = query(
+    collection(db, 'jobs'),
+    where('owner_id', '==', owner_id),
+    orderBy('created_at', 'desc')
+  )
   const snapshot = await getDocs(q)
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job))
 }

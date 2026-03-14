@@ -1,10 +1,43 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ClickOutside from '../ClickOutside';
-import UserOne from '../../images/user/user-01.png';
+import { signOut as firebaseSignOut } from '../../lib/db';
+import { useSession } from '../../ui/useSession';
+
+const avatars = [
+  { id: '1', bgColor: 'bg-primary', icon: '👤', color: 'text-white' },
+  { id: '2', bgColor: 'bg-success', icon: '💼', color: 'text-white' },
+  { id: '3', bgColor: 'bg-warning', icon: '⭐', color: 'text-white' },
+  { id: '4', bgColor: 'bg-meta-5', icon: '⚡', color: 'text-white' },
+  { id: '5', bgColor: 'bg-meta-3', icon: '🔥', color: 'text-white' },
+];
 
 const DropdownUser = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { session } = useSession();
+
+  const isAvatar = (url: string) => url?.startsWith('avatar:');
+  const getAvatarId = (url: string) => url?.split(':')[1];
+
+  const renderPhoto = (url: string | null | undefined) => {
+    if (url && isAvatar(url)) {
+      const avatar = avatars.find(a => a.id === getAvatarId(url)) || avatars[0];
+      return (
+        <div className={`h-full w-full flex items-center justify-center ${avatar.bgColor} ${avatar.color} text-xl font-bold rounded-full`}>
+          {avatar.icon}
+        </div>
+      );
+    }
+    if (url) {
+      return <img src={url} alt="User" className="h-full w-full object-cover rounded-full" />;
+    }
+    // Default fallback
+    return (
+        <div className="h-full w-full flex items-center justify-center bg-primary text-white text-xl font-bold rounded-full">
+          👤
+        </div>
+    );
+  };
 
   return (
     <ClickOutside onClick={() => setDropdownOpen(false)} className="relative">
@@ -15,13 +48,13 @@ const DropdownUser = () => {
       >
         <span className="hidden text-right lg:block">
           <span className="block text-sm font-medium text-black dark:text-white">
-            Thomas Anree
+            {session?.displayName || (session?.email?.split('@')[0]) || 'User'}
           </span>
-          <span className="block text-xs">UX Designer</span>
+          <span className="block text-xs">{session?.email}</span>
         </span>
 
-        <span className="h-12 w-12 rounded-full">
-          <img src={UserOne} alt="User" />
+        <span className="h-12 w-12 rounded-full overflow-hidden border border-stroke dark:border-strokedark">
+          {renderPhoto(session?.photoURL)}
         </span>
 
         <svg
@@ -74,7 +107,7 @@ const DropdownUser = () => {
             </li>
             <li>
               <Link
-                to="#"
+                to="/contacts"
                 className="flex items-center gap-3.5 text-sm font-medium duration-300 ease-in-out hover:text-primary lg:text-base"
               >
                 <svg
@@ -119,7 +152,10 @@ const DropdownUser = () => {
               </Link>
             </li>
           </ul>
-          <button className="flex items-center gap-3.5 px-6 py-4 text-sm font-medium duration-300 ease-in-out hover:text-primary lg:text-base">
+          <button
+            onClick={() => firebaseSignOut()}
+            className="flex items-center gap-3.5 px-6 py-4 text-sm font-medium duration-300 ease-in-out hover:text-primary lg:text-base"
+          >
             <svg
               className="fill-current"
               width="22"

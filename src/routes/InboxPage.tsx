@@ -80,7 +80,7 @@ export default function InboxPage() {
     <>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-title-md2 font-semibold text-black dark:text-white">
-          Inbox
+          Leads
         </h2>
         <span className="inline-flex rounded-full bg-primary/10 py-1 px-3 text-sm font-medium text-primary">
           New leads: {newLeads.length}

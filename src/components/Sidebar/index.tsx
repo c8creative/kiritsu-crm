@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import Logo from '../../images/logo/logo.svg';
+import Logo from '../../images/brand/kiritsu-crm-logo.png';
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -64,7 +64,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
       {/* <!-- SIDEBAR HEADER --> */}
       <div className="flex items-center justify-between gap-2 px-6 py-5.5 lg:py-6.5">
         <NavLink to="/">
-          <img src={Logo} alt="Logo" />
+          <img src={Logo} alt="Kiritsu CRM" className="h-32 w-auto mx-auto" />
         </NavLink>
 
         <button
@@ -108,7 +108,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                     pathname.includes('inbox') ? 'bg-graydark dark:bg-meta-4' : ''
                   }`}
                 >
-                  Inbox
+                  Leads
                 </NavLink>
               </li>
               <li>
@@ -149,6 +149,26 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                   }`}
                 >
                   Jobs
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/contacts"
+                  className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
+                    pathname.includes('contacts') ? 'bg-graydark dark:bg-meta-4' : ''
+                  }`}
+                >
+                  My Contacts
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/settings"
+                  className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
+                    pathname.includes('settings') ? 'bg-graydark dark:bg-meta-4' : ''
+                  }`}
+                >
+                  Settings
                 </NavLink>
               </li>
             </ul>

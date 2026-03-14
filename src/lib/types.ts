@@ -24,10 +24,12 @@ export type Opportunity = {
   owner_id: string
   lead_id: string | null
   account_id: string | null
+  account_name: string | null
   stage: string
   value_monthly: number | null
   next_follow_up_date: string | null
   next_follow_up_note: string | null
+  lead_source: string | null
   created_at: string
 }
 

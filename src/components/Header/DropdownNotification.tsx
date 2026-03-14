@@ -1,10 +1,100 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ClickOutside from '../ClickOutside';
+import { listOpportunities } from '../../lib/db';
+import { Opportunity } from '../../lib/types';
+import { isToday, isPast, isBefore, addDays, parseISO, format } from 'date-fns';
 
 const DropdownNotification = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [notifying, setNotifying] = useState(true);
+  const [notifying, setNotifying] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  const fetchNotifications = async () => {
+    try {
+      const opps = await listOpportunities();
+      const newNotifications: any[] = [];
+      const now = new Date();
+      const upcomingThreshold = addDays(now, 3);
+
+      opps.forEach((opp) => {
+        // 1. New Leads
+        if (opp.stage === 'new') {
+          newNotifications.push({
+            id: `new-${opp.id}`,
+            title: 'New Lead',
+            message: `${opp.account_name || 'Business'} is in the New stage.`,
+            date: opp.created_at,
+            type: 'new',
+            oppId: opp.id
+          });
+        }
+
+        // Follow-up logic
+        if (opp.next_follow_up_date) {
+            const followUpDate = parseISO(opp.next_follow_up_date);
+            
+            // 2. Overdue
+            if (isPast(followUpDate) && !isToday(followUpDate)) {
+                newNotifications.push({
+                    id: `overdue-${opp.id}`,
+                    title: 'Overdue Follow-up',
+                    message: `Follow-up for ${opp.account_name || 'Business'} was due on ${format(followUpDate, 'MMM d')}.`,
+                    date: opp.next_follow_up_date,
+                    type: 'overdue',
+                    oppId: opp.id
+                });
+            }
+            // 3. Due Today
+            else if (isToday(followUpDate)) {
+                newNotifications.push({
+                    id: `today-${opp.id}`,
+                    title: 'Due Today',
+                    message: `Follow-up for ${opp.account_name || 'Business'} is due today.`,
+                    date: opp.next_follow_up_date,
+                    type: 'today',
+                    oppId: opp.id
+                });
+            }
+            // 4. Soon Upcoming (Next 3 days)
+            else if (isBefore(followUpDate, upcomingThreshold) && !isPast(followUpDate)) {
+                newNotifications.push({
+                    id: `soon-${opp.id}`,
+                    title: 'Upcoming Follow-up',
+                    message: `Follow-up for ${opp.account_name || 'Business'} is coming up on ${format(followUpDate, 'MMM d')}.`,
+                    date: opp.next_follow_up_date,
+                    type: 'soon',
+                    oppId: opp.id
+                });
+            }
+        }
+      });
+
+      // Sort by date (relevant notifications)
+      newNotifications.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      setNotifications(newNotifications);
+      setNotifying(newNotifications.length > 0);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchNotifications, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const getTypeStyle = (type: string) => {
+    switch (type) {
+      case 'overdue': return 'text-danger bg-danger/10';
+      case 'today': return 'text-warning bg-warning/10';
+      case 'new': return 'text-success bg-success/10';
+      default: return 'text-primary bg-primary/10';
+    }
+  };
 
   return (
     <ClickOutside onClick={() => setDropdownOpen(false)} className="relative">
@@ -44,77 +134,58 @@ const DropdownNotification = () => {
           <div
             className={`absolute -right-27 mt-2.5 flex h-90 w-75 flex-col rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark sm:right-0 sm:w-80`}
           >
-            <div className="px-4.5 py-3">
+            <div className="px-4.5 py-3 border-b border-stroke dark:border-strokedark flex items-center justify-between">
               <h5 className="text-sm font-medium text-bodydark2">
-                Notification
+                Notifications ({notifications.length})
               </h5>
+              <button 
+                onClick={() => fetchNotifications()}
+                className="text-xs text-primary hover:underline"
+              >
+                Refresh
+              </button>
             </div>
 
             <ul className="flex h-auto flex-col overflow-y-auto">
-              <li>
-                <Link
-                  className="flex flex-col gap-2.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4"
-                  to="#"
-                >
-                  <p className="text-sm">
-                    <span className="text-black dark:text-white">
-                      Edit your information in a swipe
-                    </span>{' '}
-                    Sint occaecat cupidatat non proident, sunt in culpa qui
-                    officia deserunt mollit anim.
-                  </p>
-
-                  <p className="text-xs">12 May, 2025</p>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="flex flex-col gap-2.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4"
-                  to="#"
-                >
-                  <p className="text-sm">
-                    <span className="text-black dark:text-white">
-                      It is a long established fact
-                    </span>{' '}
-                    that a reader will be distracted by the readable.
-                  </p>
-
-                  <p className="text-xs">24 Feb, 2025</p>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="flex flex-col gap-2.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4"
-                  to="#"
-                >
-                  <p className="text-sm">
-                    <span className="text-black dark:text-white">
-                      There are many variations
-                    </span>{' '}
-                    of passages of Lorem Ipsum available, but the majority have
-                    suffered
-                  </p>
-
-                  <p className="text-xs">04 Jan, 2025</p>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="flex flex-col gap-2.5 border-t border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4"
-                  to="#"
-                >
-                  <p className="text-sm">
-                    <span className="text-black dark:text-white">
-                      There are many variations
-                    </span>{' '}
-                    of passages of Lorem Ipsum available, but the majority have
-                    suffered
-                  </p>
-
-                  <p className="text-xs">01 Dec, 2024</p>
-                </Link>
-              </li>
+              {notifications.length === 0 ? (
+                <li className="px-4.5 py-10 text-center text-sm text-slate-400">
+                  All caught up! No urgent follow-ups.
+                </li>
+              ) : (
+                notifications.map((notif) => (
+                  <li key={notif.id}>
+                    <Link
+                      className="flex flex-col gap-1 border-b border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4 transition-colors"
+                      to="/pipeline"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${getTypeStyle(notif.type)}`}>
+                            {notif.title}
+                        </span>
+                        <p className="text-[10px] text-slate-500">
+                          {format(new Date(notif.date), 'MMM d, h:mm a')}
+                        </p>
+                      </div>
+                      <p className="text-sm text-black dark:text-white leading-tight">
+                        {notif.message}
+                      </p>
+                    </Link>
+                  </li>
+                ))
+              )}
             </ul>
+            {notifications.length > 0 && (
+                <div className="p-2 border-t border-stroke dark:border-strokedark">
+                    <Link 
+                        to="/pipeline" 
+                        className="block text-center text-xs text-primary font-medium hover:underline"
+                        onClick={() => setDropdownOpen(false)}
+                    >
+                        View Full Pipeline
+                    </Link>
+                </div>
+            )}
           </div>
         )}
       </li>

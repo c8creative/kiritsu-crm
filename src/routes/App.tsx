@@ -8,6 +8,9 @@ import AccountDetailPage from './AccountDetailPage'
 import FollowUpsPage from './FollowUpsPage'
 import JobsPage from './JobsPage'
 import JobDetailPage from './JobDetailPage'
+import ProfilePage from './ProfilePage'
+import ContactsPage from './ContactsPage'
+import SettingsPage from './SettingsPage'
 import { useSession } from '../ui/useSession'
 
 export default function App() {
@@ -35,6 +38,9 @@ export default function App() {
         <Route path="/followups" element={<FollowUpsPage />} />
         <Route path="/jobs" element={<JobsPage />} />
         <Route path="/jobs/:id" element={<JobDetailPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/contacts" element={<ContactsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/inbox" replace />} />
       </Routes>
     </DefaultLayout>

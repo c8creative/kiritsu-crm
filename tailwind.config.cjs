@@ -8,6 +8,8 @@ module.exports = {
   theme: {
     fontFamily: {
       satoshi: ['Satoshi', 'sans-serif'],
+      nunito: ['Nunito', 'sans-serif'],
+      inter: ['Inter', 'sans-serif'],
     },
     screens: {
       '2xsm': '375px',
@@ -22,20 +24,24 @@ module.exports = {
         white: '#FFFFFF',
         black: {
           ...colors.black,
-          DEFAULT: '#1C2434',
+          DEFAULT: '#12121C', // Sumi 900
           2: '#010101',
         },
         red: {
           ...colors.red,
-          DEFAULT: '#FB5454',
+          DEFAULT: '#12121C', // Using Sumi 900
         },
-        body: '#64748B',
+        brand: {
+          black: '#12121C', // Replaced brand.red
+          indigo: '#12121C', // Replaced brand.indigo
+        },
+        body: '#4A4A54', // Sumi 500
         bodydark: '#AEB7C0',
         bodydark1: '#DEE4EE',
         bodydark2: '#8A99AF',
-        primary: '#3C50E0',
-        secondary: '#80CAEE',
-        stroke: '#E2E8F0',
+        primary: '#12121C', // Using Sumi 900 as Primary (Black)
+        secondary: '#12121C', // Using Sumi 900 as Secondary (Black)
+        stroke: '#E4E4E7', // Sumi 100
         gray: {
           ...colors.gray,
           DEFAULT: '#EFF4FB',
@@ -43,27 +49,27 @@ module.exports = {
           3: '#FAFAFA',
         },
         graydark: '#333A48',
-        whiten: '#F1F5F9',
-        whiter: '#F5F7FD',
+        whiten: '#FAF9F6', // Washi 50
+        whiter: '#F5F3EF', // Washi 100
         boxdark: '#24303F',
         'boxdark-2': '#1A222C',
         strokedark: '#2E3A47',
         'form-strokedark': '#3d4d60',
         'form-input': '#1d2a39',
         meta: {
-          1: '#DC3545',
+          1: '#12121C', // Was Red (#DC3545)
           2: '#EFF2F7',
           3: '#10B981',
           4: '#313D4A',
           5: '#259AE6',
           6: '#FFBA00',
-          7: '#FF6766',
+          7: '#12121C', // Was Red (#FF6766)
           8: '#F0950C',
           9: '#E5E7EB',
           10: '#0FADCF',
         },
         success: '#219653',
-        danger: '#D34053',
+        danger: '#12121C', // Was Red (#D34053)
         warning: '#FFA70B',
       },
       fontSize: {

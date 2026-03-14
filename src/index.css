@@ -3,8 +3,14 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    font-size: 14px; /* Scaled down from 16px to fit more content on screen */
+  }
   body {
-    @apply font-satoshi font-normal text-base text-body bg-whiten relative z-1;
+    @apply font-inter font-normal text-base text-body bg-whiten relative z-1;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-nunito;
   }
 }
 
