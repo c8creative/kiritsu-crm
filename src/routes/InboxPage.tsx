@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { createLead, convertLeadToAccount, listLeads } from '../lib/db'
+import { createLead, convertLeadToConnection, listLeads } from '../lib/db'
 import type { Lead } from '../lib/types'
 import CsvImport from '../ui/CsvImport'
 
@@ -9,6 +9,7 @@ export default function InboxPage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [leadName, setLeadName] = useState('')
 
   const refresh = async () => {
     setErr(null)
@@ -54,6 +55,7 @@ export default function InboxPage() {
         status: 'new',
       } as any)
 
+      setLeadName('')
       form.reset()
       await refresh()
     } catch (e: any) {
@@ -67,7 +69,7 @@ export default function InboxPage() {
     setErr(null)
     setBusy(true)
     try {
-      await convertLeadToAccount(leadId)
+      await convertLeadToConnection(leadId)
       await refresh()
     } catch (e: any) {
       setErr(e?.message ?? 'Failed to convert lead')
@@ -79,7 +81,7 @@ export default function InboxPage() {
   return (
     <>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-title-md2 font-semibold text-black dark:text-white">
+        <h2 className="text-title-md2 font-bold text-black dark:text-white">
           Leads
         </h2>
         <span className="inline-flex rounded-full bg-primary/10 py-1 px-3 text-sm font-medium text-primary">
@@ -87,11 +89,11 @@ export default function InboxPage() {
         </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-9 mt-4 lg:grid-cols-2">
-        <div className="flex flex-col gap-9">
-          <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="flex flex-col gap-6">
+          <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
             <div className="border-b border-stroke py-4 px-6.5 dark:border-strokedark">
-              <h3 className="font-medium text-black dark:text-white">
+              <h3 className="font-bold text-lg text-black dark:text-white">
                 Add lead
               </h3>
             </div>
@@ -110,6 +112,8 @@ export default function InboxPage() {
                   <label className="mb-2.5 block text-black dark:text-white">Business name</label>
                   <input
                     name="name"
+                    value={leadName}
+                    onChange={(e) => setLeadName(e.target.value)}
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                     placeholder="Restaurant / Business"
                     required
@@ -138,12 +142,15 @@ export default function InboxPage() {
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4 mt-2">
-                <button className="flex w-full sm:w-auto justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90" disabled={busy}>
+              <div className="flex flex-col sm:flex-row-reverse sm:items-center justify-between gap-4 mt-2 text-right">
+                <button 
+                  className="flex w-full sm:w-auto justify-center rounded bg-primary py-3 px-8 font-medium text-gray hover:bg-opacity-90 disabled:bg-slate-400 disabled:cursor-not-allowed" 
+                  disabled={busy || !leadName.trim()}
+                >
                   {busy ? 'Adding…' : 'Add Lead'}
                 </button>
-                <span className="text-sm text-body-color dark:text-bodydark flex-1">
-                  Convert a lead to create an Account + Opportunity.
+                <span className="text-sm text-body-color dark:text-bodydark flex-1 sm:text-left">
+                  Convert a lead to create a Connection + Opportunity.
                 </span>
               </div>
             </form>
@@ -153,31 +160,39 @@ export default function InboxPage() {
                 {err}
               </div>
             )}
-            <div className="px-6.5 pb-6">
+          </div>
+
+          <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+            <div className="border-b border-stroke py-4 px-6.5 dark:border-strokedark">
+              <h3 className="font-bold text-lg text-black dark:text-white">
+                Import CSV
+              </h3>
+            </div>
+            <div className="p-6.5">
               <CsvImport onImported={refresh} />
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-9">
-          <div className="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1">
-            <h4 className="mb-6 text-xl font-semibold text-black dark:text-white">
+        <div className="flex flex-col gap-6">
+          <div className="rounded-lg border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1">
+            <h4 className="mb-6 text-xl font-bold text-black dark:text-white">
               New leads
             </h4>
 
             <div className="flex flex-col">
-              <div className="grid grid-cols-4 rounded-sm bg-gray-2 dark:bg-meta-4 sm:grid-cols-4">
+              <div className="grid grid-cols-4 rounded-lg bg-gray-2 dark:bg-meta-4 sm:grid-cols-4">
                 <div className="p-2.5 xl:p-5">
-                  <h5 className="text-sm font-medium uppercase xsm:text-base">Name</h5>
+                  <h5 className="text-sm font-bold uppercase xsm:text-base">Name</h5>
                 </div>
                 <div className="p-2.5 text-center xl:p-5">
-                  <h5 className="text-sm font-medium uppercase xsm:text-base">Source</h5>
+                  <h5 className="text-sm font-bold uppercase xsm:text-base">Source</h5>
                 </div>
                 <div className="p-2.5 text-center xl:p-5">
-                  <h5 className="text-sm font-medium uppercase xsm:text-base">Contact</h5>
+                  <h5 className="text-sm font-bold uppercase xsm:text-base">Contact</h5>
                 </div>
                 <div className="hidden p-2.5 text-center sm:block xl:p-5">
-                  <h5 className="text-sm font-medium uppercase xsm:text-base">Action</h5>
+                  <h5 className="text-sm font-bold uppercase xsm:text-base">Action</h5>
                 </div>
               </div>
 

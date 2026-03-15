@@ -1,20 +1,30 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { completeVisit, createVisit, listJobs, listVisits } from '../lib/db'
+import { useParams, Link } from 'react-router-dom'
+import { completeVisit, createVisit, listJobs, listVisits, getConnection } from '../lib/db'
+import type { Job, Connection, Visit } from '../lib/types'
 
 export default function JobDetailPage() {
   const { id } = useParams()
-  const [job, setJob] = useState<any>(null)
-  const [visits, setVisits] = useState<any[]>([])
+  const [job, setJob] = useState<Job | null>(null)
+  const [connection, setConnection] = useState<Connection | null>(null)
+  const [visits, setVisits] = useState<Visit[]>([])
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const refresh = async () => {
     if (!id) return
     const jobs = await listJobs()
-    setJob((jobs as any[]).find((j) => j.id === id) ?? null)
+    const foundJob = (jobs as any[]).find((j) => j.id === id)
+    setJob(foundJob ?? null)
+    
+    if (foundJob) {
+        // Fetch connection for display
+        const connData = await getConnection(foundJob.connection_id)
+        setConnection(connData.connection as Connection)
+    }
+
     const v = await listVisits(id)
-    setVisits(v as any)
+    setVisits(v)
   }
 
   useEffect(() => {
@@ -28,9 +38,14 @@ export default function JobDetailPage() {
     <>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-title-md2 font-semibold text-black dark:text-white">
+          <h2 className="text-title-md2 font-bold text-black dark:text-white">
             Job Details
           </h2>
+          {connection && (
+              <div className="text-sm font-medium text-body-color dark:text-bodydark mt-1 hover:text-primary transition-colors">
+                  Client: <Link to={`/connections/${connection.id}`}>{connection.firstName} {connection.lastName} {connection.company ? `(${connection.company})` : ''}</Link>
+              </div>
+          )}
         </div>
         <div>
           <span className="inline-flex rounded-full bg-primary/10 py-1 px-3 text-sm font-medium text-primary">
@@ -43,8 +58,8 @@ export default function JobDetailPage() {
 
       <div className="grid grid-cols-1 gap-9 mt-4 lg:grid-cols-2">
         <div className="flex flex-col gap-9">
-          <div className="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 lg:pb-6">
-            <h4 className="mb-6 text-xl font-semibold text-black dark:text-white">Schedule visit</h4>
+          <div className="rounded-lg border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 lg:pb-6">
+            <h4 className="mb-6 text-xl font-bold text-black dark:text-white">Schedule visit</h4>
             <form
               onSubmit={async (e) => {
                 e.preventDefault()
@@ -72,7 +87,7 @@ export default function JobDetailPage() {
             </form>
 
             <div className="mt-8 border-t border-stroke pt-6 dark:border-strokedark">
-              <h4 className="mb-4 text-xl font-semibold text-black dark:text-white">Visits</h4>
+              <h4 className="mb-4 text-xl font-bold text-black dark:text-white">Visits</h4>
               <div className="max-w-full overflow-x-auto">
                 <table className="w-full table-auto mb-4">
                   <thead>
@@ -126,8 +141,8 @@ export default function JobDetailPage() {
         </div>
 
         <div className="flex flex-col gap-9">
-          <div className="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5">
-            <h4 className="mb-4 text-xl font-semibold text-black dark:text-white">Job notes</h4>
+          <div className="rounded-lg border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5">
+            <h4 className="mb-4 text-xl font-bold text-black dark:text-white">Job notes</h4>
             <div className="text-body-color dark:text-bodydark mb-6">{job.notes ?? '—'}</div>
           </div>
         </div>

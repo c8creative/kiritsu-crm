@@ -3,13 +3,12 @@ import DefaultLayout from '../layout/DefaultLayout'
 import AuthPage from './AuthPage'
 import InboxPage from './InboxPage'
 import PipelinePage from './PipelinePage'
-import AccountsPage from './AccountsPage'
-import AccountDetailPage from './AccountDetailPage'
-import FollowUpsPage from './FollowUpsPage'
+import ConnectionsPage from './ConnectionsPage'
+import ConnectionDetailPage from './ConnectionDetailPage'
+import DashboardPage from './DashboardPage'
 import JobsPage from './JobsPage'
 import JobDetailPage from './JobDetailPage'
 import ProfilePage from './ProfilePage'
-import ContactsPage from './ContactsPage'
 import SettingsPage from './SettingsPage'
 import { useSession } from '../ui/useSession'
 
@@ -30,18 +29,17 @@ export default function App() {
   return (
     <DefaultLayout>
       <Routes>
-        <Route path="/" element={<Navigate to="/followups" replace />} />
+        <Route path="/" element={<DashboardPage />} />
         <Route path="/inbox" element={<InboxPage />} />
         <Route path="/pipeline" element={<PipelinePage />} />
-        <Route path="/accounts" element={<AccountsPage />} />
-        <Route path="/accounts/:id" element={<AccountDetailPage />} />
-        <Route path="/followups" element={<FollowUpsPage />} />
+        <Route path="/connections" element={<ConnectionsPage />} />
+        <Route path="/connections/:id" element={<ConnectionDetailPage />} />
+        <Route path="/followups" element={<Navigate to="/" replace />} />
         <Route path="/jobs" element={<JobsPage />} />
         <Route path="/jobs/:id" element={<JobDetailPage />} />
         <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/contacts" element={<ContactsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route path="*" element={<Navigate to="/inbox" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </DefaultLayout>
   )

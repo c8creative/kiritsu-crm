@@ -9,7 +9,7 @@
       ]
     },
     {
-      "collectionGroup": "accounts",
+      "collectionGroup": "connections",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "owner_id", "order": "ASCENDING" },

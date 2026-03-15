@@ -46,14 +46,35 @@ export default function CsvImport({ onImported }: { onImported: () => Promise<vo
     setBusy(false)
   }
 
+  const downloadTemplate = () => {
+    const headers = ['name', 'source', 'phone', 'email', 'address_text']
+    const csvContent = headers.join(',') + '\nSample Business,door,703-555-0199,gm@sample.com,123 Main St'
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', 'leads_template.csv')
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
-    <div>
-      <strong>Import CSV (Leads)</strong>
-      <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 6 }}>
-        Headers: name, source, phone, email, address_text
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-bodydark2">
+          Supports: name, source, phone, email, address_text
+        </p>
+        <button 
+            onClick={downloadTemplate}
+            className="text-xs text-primary dark:text-bodydark2 hover:underline font-medium"
+        >
+            Download CSV Template
+        </button>
       </div>
+      
       <input
-        style={{ marginTop: 10 }}
         type="file"
         accept=".csv,text/csv"
         disabled={busy}
@@ -61,8 +82,9 @@ export default function CsvImport({ onImported }: { onImported: () => Promise<vo
           const f = e.target.files?.[0]
           if (f) onFile(f)
         }}
+        className="w-full cursor-pointer rounded-lg border-[1.5px] border-stroke bg-transparent font-medium outline-none transition file:mr-5 file:border-collapse file:cursor-pointer file:border-0 file:border-r file:border-solid file:border-stroke file:bg-whiter file:py-3 file:px-5 file:hover:bg-primary file:hover:bg-opacity-10 focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:file:border-form-strokedark dark:file:bg-white/30 dark:file:text-white dark:focus:border-primary"
       />
-      {msg && <div style={{ marginTop: 8, color: 'var(--accent)' }}>{msg}</div>}
+      {msg && <div className="mt-2 text-sm text-meta-3">{msg}</div>}
     </div>
   )
 }

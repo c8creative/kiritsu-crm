@@ -44,7 +44,7 @@ export default function SortableCard({
     <div
       ref={setNodeRef}
       style={style as any}
-      className="rounded-sm border-2 border-slate-300 bg-white p-4 shadow-sm transition hover:shadow-md hover:border-slate-400 dark:border-[#2E3A47] dark:bg-[#24303F] relative z-10"
+      className="rounded-lg border-2 border-slate-300 bg-white p-4 shadow-sm transition hover:shadow-md hover:border-slate-400 dark:border-[#2E3A47] dark:bg-[#24303F] relative z-10"
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div>
@@ -54,7 +54,7 @@ export default function SortableCard({
           )}
         </div>
         <div 
-          className="hidden sm:flex cursor-move p-1.5 text-body-color hover:text-black dark:hover:text-white hover:bg-gray-2 dark:hover:bg-boxdark-2 rounded-sm transition-colors"
+          className="hidden sm:flex cursor-move p-1.5 text-body-color hover:text-black dark:hover:text-white hover:bg-gray-2 dark:hover:bg-boxdark-2 rounded-lg transition-colors"
           {...attributes}
           {...listeners}
           title="Drag to move"

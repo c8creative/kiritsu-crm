@@ -5,14 +5,66 @@ import {
   getDocs,
   addDoc,
   updateDoc,
+  deleteDoc,
   query,
   where,
   orderBy,
-  serverTimestamp
+  serverTimestamp,
+  setDoc
 } from 'firebase/firestore'
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as fSignOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
-import { db, auth } from './firebase'
-import type { Lead, Account, Opportunity, Job, Visit } from './types'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { db, auth, storage } from './firebase'
+import type { Lead, Connection, Opportunity, Job, Visit } from './types'
+
+export interface SearchResult {
+  id: string
+  type: 'lead' | 'connection'
+  title: string
+  subtitle?: string
+}
+
+export async function globalSearch(queryStr: string): Promise<SearchResult[]> {
+  const owner_id = await getSessionUserId()
+  if (!owner_id || !queryStr.trim()) return []
+  
+  const term = queryStr.toLowerCase()
+  
+  const [leads, connections] = await Promise.all([
+    listLeads(),
+    listConnections()
+  ])
+  
+  const leadResults: SearchResult[] = leads
+    .filter(l => 
+      (l.name?.toLowerCase().includes(term)) || 
+      (l.email?.toLowerCase().includes(term)) || 
+      (l.phone?.toLowerCase().includes(term))
+    )
+    .map(l => ({
+      id: l.id,
+      type: 'lead',
+      title: l.name || 'Unnamed Lead',
+      subtitle: `Lead • ${l.email || l.phone || l.status}`
+    }))
+    
+  const connResults: SearchResult[] = connections
+    .filter(c => 
+      (c.firstName?.toLowerCase().includes(term)) || 
+      (c.lastName?.toLowerCase().includes(term)) || 
+      (c.email?.toLowerCase().includes(term)) || 
+      (c.phone?.toLowerCase().includes(term)) ||
+      (c.company?.toLowerCase().includes(term))
+    )
+    .map(c => ({
+      id: c.id,
+      type: 'connection',
+      title: `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Unnamed Connection',
+      subtitle: `Connection • ${c.company || c.email || 'No Email'}`
+    }))
+    
+  return [...leadResults, ...connResults].slice(0, 10)
+}
 
 export async function getSessionUserId(): Promise<string | null> {
   return auth.currentUser?.uid ?? null
@@ -70,7 +122,7 @@ export async function createLead(input: Omit<Lead, 'id'|'owner_id'|'created_at'>
   return { id: newDoc.id, ...newDoc.data() } as Lead
 }
 
-export async function convertLeadToAccount(leadId: string) {
+export async function convertLeadToConnection(leadId: string) {
   const owner_id = await getSessionUserId()
   if (!owner_id) throw new Error('Not authenticated')
 
@@ -79,88 +131,108 @@ export async function convertLeadToAccount(leadId: string) {
   if (!leadSnap.exists()) throw new Error('Lead not found')
   const lead = leadSnap.data() as Lead
 
-  const accRef = await addDoc(collection(db, 'accounts'), {
+  // Simple name splitting
+  const parts = (lead.name || '').trim().split(/\s+/)
+  const firstName = parts[0] || ''
+  const lastName = parts.slice(1).join(' ')
+
+  const connRef = await addDoc(collection(db, 'connections'), {
     owner_id,
-    name: lead.name,
+    firstName,
+    lastName,
+    email: lead.email,
+    phone: lead.phone,
+    street: lead.address_text,
     status: 'prospect',
     created_at: new Date().toISOString()
   })
-  const account = { id: accRef.id, ...(await getDoc(accRef)).data() }
+  const connection = { id: connRef.id, ...(await getDoc(connRef)).data() }
 
   await updateDoc(leadRef, { status: 'converted' })
 
   const oppRef = await addDoc(collection(db, 'opportunities'), {
     owner_id,
     lead_id: leadId,
-    account_id: accRef.id,
-    account_name: lead.name,
+    connection_id: connRef.id,
+    account_name: lead.name, // Display helper
     lead_source: lead.source,
     stage: 'new',
-    probability: 25,
     created_at: new Date().toISOString()
   })
   const opportunity = { id: oppRef.id, ...(await getDoc(oppRef)).data() }
 
-  return { account, opportunity }
+  return { connection, opportunity }
 }
 
-// Accounts
-export async function listAccounts(): Promise<Account[]> {
+// Connections
+export async function listConnections(): Promise<Connection[]> {
   const owner_id = await getSessionUserId()
   if (!owner_id) return []
   const q = query(
-    collection(db, 'accounts'),
+    collection(db, 'connections'),
     where('owner_id', '==', owner_id),
     orderBy('created_at', 'desc')
   )
   const snapshot = await getDocs(q)
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Account))
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Connection))
 }
 
-export async function getAccount(accountId: string) {
-  const accountRef = doc(db, 'accounts', accountId)
-  const accountSnap = await getDoc(accountRef)
-  if (!accountSnap.exists()) throw new Error('Account not found')
-  const account = { id: accountSnap.id, ...accountSnap.data() }
+export async function getConnection(connectionId: string) {
+  const connRef = doc(db, 'connections', connectionId)
+  const connSnap = await getDoc(connRef)
+  if (!connSnap.exists()) throw new Error('Connection not found')
+  const connection = { id: connSnap.id, ...connSnap.data() }
 
   const fetchCollection = async (coll: string, orderField = 'created_at', direction: 'asc'|'desc' = 'asc') => {
-    const q = query(collection(db, coll), where('account_id', '==', accountId), orderBy(orderField, direction))
+    const q = query(collection(db, coll), where('connection_id', '==', connectionId))
     const snap = await getDocs(q)
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    const items = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    items.sort((a: any, b: any) => {
+        const valA = a[orderField] || ''
+        const valB = b[orderField] || ''
+        if (direction === 'asc') return valA > valB ? 1 : -1
+        return valA < valB ? 1 : -1
+    })
+    return items
   }
 
-  const [contacts, locations, opps, activities, jobs] = await Promise.all([
-    fetchCollection('contacts'),
-    fetchCollection('locations'),
+  const [opportunities, activities, jobs] = await Promise.all([
     fetchCollection('opportunities', 'created_at', 'desc'),
     fetchCollection('activities', 'occurred_at', 'desc'),
     fetchCollection('jobs', 'created_at', 'desc')
   ])
 
-  return { account, contacts, locations, opps, activities, jobs }
+  return { connection, opportunities, activities, jobs }
 }
 
-export async function addContact(account_id: string, payload: { name: string; role?: string; phone?: string; email?: string }) {
-  const owner_id = await getSessionUserId()
-  if (!owner_id) throw new Error('Not authenticated')
-  const docRef = await addDoc(collection(db, 'contacts'), { owner_id, account_id, created_at: new Date().toISOString(), ...payload })
-  const newDoc = await getDoc(docRef)
-  return { id: newDoc.id, ...newDoc.data() }
+export async function createConnection(payload: Omit<Connection, 'id'|'owner_id'|'created_at'>) {
+    const owner_id = await getSessionUserId()
+    if (!owner_id) throw new Error('Not authenticated')
+    const docRef = await addDoc(collection(db, 'connections'), {
+        owner_id,
+        ...payload,
+        created_at: new Date().toISOString()
+    })
+    const newDoc = await getDoc(docRef)
+    return { id: newDoc.id, ...newDoc.data() } as Connection
 }
 
-export async function addLocation(account_id: string, payload: { label?: string; address1?: string; city?: string; state?: string; zip?: string; notes?: string }) {
-  const owner_id = await getSessionUserId()
-  if (!owner_id) throw new Error('Not authenticated')
-  const docRef = await addDoc(collection(db, 'locations'), { owner_id, account_id, created_at: new Date().toISOString(), ...payload })
-  const newDoc = await getDoc(docRef)
-  return { id: newDoc.id, ...newDoc.data() }
+export async function updateConnection(connectionId: string, payload: Partial<Omit<Connection, 'id'|'owner_id'|'created_at'>>) {
+    const connRef = doc(db, 'connections', connectionId)
+    await updateDoc(connRef, { ...payload, updated_at: new Date().toISOString() })
+    const updated = await getDoc(connRef)
+    return { id: updated.id, ...updated.data() } as Connection
 }
 
-export async function addActivity(account_id: string, opportunity_id: string | null, payload: { activity_type: string; summary?: string; details?: string }) {
+export async function deleteConnection(connectionId: string) {
+    await deleteDoc(doc(db, 'connections', connectionId))
+}
+
+export async function addActivity(connection_id: string, opportunity_id: string | null, payload: { activity_type: string; summary?: string; details?: string }) {
   const owner_id = await getSessionUserId()
   if (!owner_id) throw new Error('Not authenticated')
   const docRef = await addDoc(collection(db, 'activities'), {
-    owner_id, account_id, opportunity_id, occurred_at: new Date().toISOString(), ...payload
+    owner_id, connection_id, opportunity_id, occurred_at: new Date().toISOString(), ...payload
   })
   const newDoc = await getDoc(docRef)
   return { id: newDoc.id, ...newDoc.data() }
@@ -263,3 +335,49 @@ export async function completeVisit(visit_id: string, notes: string | null) {
   const newDoc = await getDoc(visitRef)
   return { id: newDoc.id, ...newDoc.data() } as Visit
 }
+
+// Settings
+export async function getUserSettings() {
+  const owner_id = await getSessionUserId()
+  if (!owner_id) return null
+  const settingsRef = doc(db, 'user_settings', owner_id)
+  const snap = await getDoc(settingsRef)
+  if (snap.exists()) {
+    return snap.data()
+  }
+  return { email_notifications: true } // Default
+}
+
+export async function updateUserSettings(payload: any) {
+  const owner_id = await getSessionUserId()
+  if (!owner_id) throw new Error('Not authenticated')
+  const settingsRef = doc(db, 'user_settings', owner_id)
+  await setDoc(settingsRef, { ...payload, updated_at: new Date().toISOString() }, { merge: true })
+}
+
+export async function uploadLogo(file: File): Promise<string> {
+  const owner_id = await getSessionUserId()
+  if (!owner_id) throw new Error('Not authenticated')
+  
+  const storageRef = ref(storage, `branding/${owner_id}/logo`)
+  await uploadBytes(storageRef, file)
+  const downloadURL = await getDownloadURL(storageRef)
+  
+  const settingsRef = doc(db, 'user_settings', owner_id)
+  await updateDoc(settingsRef, { 
+    'branding.logo_url': downloadURL,
+    updated_at: new Date().toISOString()
+  })
+  return downloadURL
+}
+
+export async function resetLogo(): Promise<void> {
+    const owner_id = await getSessionUserId()
+    if (!owner_id) throw new Error('Not authenticated')
+    const settingsRef = doc(db, 'user_settings', owner_id)
+    await updateDoc(settingsRef, { 
+        'branding.logo_url': null,
+        updated_at: new Date().toISOString()
+    })
+}
+

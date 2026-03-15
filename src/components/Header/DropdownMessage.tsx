@@ -60,10 +60,10 @@ const DropdownMessage = () => {
         {/* <!-- Dropdown Start --> */}
         {dropdownOpen && (
           <div
-            className={`absolute -right-16 mt-2.5 flex h-90 w-75 flex-col rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark sm:right-0 sm:w-80`}
+            className={`absolute -right-16 mt-2.5 flex h-90 w-75 flex-col rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark sm:right-0 sm:w-80`}
           >
             <div className="px-4.5 py-3">
-              <h5 className="text-sm font-medium text-bodydark2">Messages</h5>
+              <h5 className="text-sm font-bold text-bodydark2">Messages</h5>
             </div>
 
             <ul className="flex h-auto flex-col overflow-y-auto">

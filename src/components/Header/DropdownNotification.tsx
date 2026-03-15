@@ -4,11 +4,13 @@ import ClickOutside from '../ClickOutside';
 import { listOpportunities } from '../../lib/db';
 import { Opportunity } from '../../lib/types';
 import { isToday, isPast, isBefore, addDays, parseISO, format } from 'date-fns';
+import { MdRefresh, MdClearAll, MdClose } from 'react-icons/md';
 
 const DropdownNotification = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifying, setNotifying] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
   const fetchNotifications = async () => {
     try {
@@ -73,11 +75,27 @@ const DropdownNotification = () => {
       // Sort by date (relevant notifications)
       newNotifications.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
-      setNotifications(newNotifications);
-      setNotifying(newNotifications.length > 0);
+      setNotifications(newNotifications.filter(n => !dismissedIds.has(n.id)));
+      setNotifying(newNotifications.filter(n => !dismissedIds.has(n.id)).length > 0);
     } catch (err) {
       console.error('Error fetching notifications:', err);
     }
+  };
+
+  const removeNotification = (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDismissedIds(prev => new Set([...prev, id]));
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const clearAll = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const allIds = notifications.map(n => n.id);
+    setDismissedIds(prev => new Set([...prev, ...allIds]));
+    setNotifications([]);
+    setNotifying(false);
   };
 
   useEffect(() => {
@@ -132,18 +150,28 @@ const DropdownNotification = () => {
 
         {dropdownOpen && (
           <div
-            className={`absolute -right-27 mt-2.5 flex h-90 w-75 flex-col rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark sm:right-0 sm:w-80`}
+            className={`absolute -right-27 mt-2.5 flex h-90 w-75 flex-col rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark sm:right-0 sm:w-80`}
           >
             <div className="px-4.5 py-3 border-b border-stroke dark:border-strokedark flex items-center justify-between">
-              <h5 className="text-sm font-medium text-bodydark2">
+              <h5 className="text-sm font-bold text-bodydark2">
                 Notifications ({notifications.length})
               </h5>
-              <button 
-                onClick={() => fetchNotifications()}
-                className="text-xs text-primary hover:underline"
-              >
-                Refresh
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); fetchNotifications(); }}
+                  className="text-bodydark2 hover:text-primary transition-colors"
+                  title="Refresh"
+                >
+                  <MdRefresh size={18} />
+                </button>
+                <button 
+                  onClick={clearAll}
+                  className="text-bodydark2 hover:text-danger transition-colors"
+                  title="Clear All"
+                >
+                  <MdClearAll size={18} />
+                </button>
+              </div>
             </div>
 
             <ul className="flex h-auto flex-col overflow-y-auto">
@@ -154,38 +182,37 @@ const DropdownNotification = () => {
               ) : (
                 notifications.map((notif) => (
                   <li key={notif.id}>
-                    <Link
-                      className="flex flex-col gap-1 border-b border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4 transition-colors"
-                      to="/pipeline"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${getTypeStyle(notif.type)}`}>
-                            {notif.title}
-                        </span>
-                        <p className="text-[10px] text-slate-500">
-                          {format(new Date(notif.date), 'MMM d, h:mm a')}
+                    <div className="relative group">
+                      <Link
+                        className="flex flex-col gap-1 border-b border-stroke px-4.5 py-3 hover:bg-gray-2 dark:border-strokedark dark:hover:bg-meta-4 transition-colors"
+                        to="/pipeline"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <div className="flex items-center justify-start gap-2">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${getTypeStyle(notif.type)}`}>
+                              {notif.title}
+                          </span>
+                          <p className="text-[10px] text-slate-500">
+                            {format(new Date(notif.date), 'MMM d, h:mm a')}
+                          </p>
+                        </div>
+                        <p className="text-sm text-black dark:text-white leading-tight pr-6">
+                          {notif.message}
                         </p>
-                      </div>
-                      <p className="text-sm text-black dark:text-white leading-tight">
-                        {notif.message}
-                      </p>
-                    </Link>
+                      </Link>
+                      <button
+                        onClick={(e) => removeNotification(notif.id, e)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-bodydark2 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                        title="Dismiss"
+                      >
+                        <MdClose size={16} />
+                      </button>
+                    </div>
                   </li>
                 ))
               )}
             </ul>
-            {notifications.length > 0 && (
-                <div className="p-2 border-t border-stroke dark:border-strokedark">
-                    <Link 
-                        to="/pipeline" 
-                        className="block text-center text-xs text-primary font-medium hover:underline"
-                        onClick={() => setDropdownOpen(false)}
-                    >
-                        View Full Pipeline
-                    </Link>
-                </div>
-            )}
+            {/* Removed View Full Pipeline */}
           </div>
         )}
       </li>

@@ -102,7 +102,7 @@ const ProfilePage = () => {
   return (
     <div className="mx-auto max-w-270">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-title-md2 font-semibold text-black dark:text-white">
+        <h2 className="text-title-md2 font-bold text-black dark:text-white">
           My Profile
         </h2>
         {message && (
@@ -117,9 +117,9 @@ const ProfilePage = () => {
 
       <div className="grid grid-cols-5 gap-8">
         <div className="col-span-12 xl:col-span-3">
-          <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+          <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
             <div className="border-b border-stroke py-4 px-7 dark:border-strokedark">
-              <h3 className="font-medium text-black dark:text-white">
+              <h3 className="font-bold text-black dark:text-white">
                 Personal Information
               </h3>
             </div>
@@ -183,9 +183,9 @@ const ProfilePage = () => {
           </div>
         </div>
         <div className="col-span-12 xl:col-span-2">
-          <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+          <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
             <div className="border-b border-stroke py-4 px-7 dark:border-strokedark">
-              <h3 className="font-medium text-black dark:text-white">
+              <h3 className="font-bold text-black dark:text-white">
                 Your Avatar
               </h3>
             </div>
