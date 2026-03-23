@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { addActivity, getConnection, deleteConnection } from '../lib/db'
+import { addActivity, getConnection, deleteConnection, createOpportunity } from '../lib/db'
 import { MdOutlinePeople, MdOutlineEmail, MdOutlinePhone, MdOutlineLanguage, MdOutlineLocationOn, MdOutlineHistory, MdOutlineEdit, MdOutlineDelete } from 'react-icons/md'
 import EditConnectionModal from '../ui/EditConnectionModal'
 
@@ -42,6 +42,21 @@ export default function ConnectionDetailPage({ id: propId, isModal, onClose }: {
         details: String(fd.get('details') || ''),
       })
       form.reset()
+      await refresh()
+    } catch (e: any) {
+      setErr(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleCreateOpp = async () => {
+    if (!id) return
+    if (!confirm('Create a new opportunity in the Pipeline?')) return
+    
+    setBusy(true)
+    try {
+      await createOpportunity(id)
       await refresh()
     } catch (e: any) {
       setErr(e.message)
@@ -203,7 +218,16 @@ export default function ConnectionDetailPage({ id: propId, isModal, onClose }: {
             <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                 <div className="border-b border-stroke py-4 px-6 dark:border-strokedark flex items-center justify-between">
                     <h3 className="font-bold text-black dark:text-white">Active Pipeline Items</h3>
-                    <Link to="/pipeline" className="text-xs text-primary dark:text-bodydark2 font-medium hover:underline">View Pipeline</Link>
+                    <div className="flex items-center gap-3">
+                        <button
+                          onClick={handleCreateOpp}
+                          disabled={busy}
+                          className="text-xs inline-flex items-center justify-center rounded bg-primary py-1.5 px-3 text-center font-medium text-white hover:bg-opacity-90 disabled:opacity-50 transition"
+                        >
+                          + Add Opp
+                        </button>
+                        <Link to="/pipeline" className="text-xs text-primary dark:text-bodydark2 font-medium hover:underline hidden sm:block">View Pipeline</Link>
+                    </div>
                 </div>
                 <div className="p-6">
                     <div className="max-w-full overflow-x-auto">

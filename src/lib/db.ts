@@ -265,6 +265,29 @@ export async function listOpportunities(): Promise<Opportunity[]> {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity))
 }
 
+export async function createOpportunity(connection_id: string, payload?: Partial<Opportunity>) {
+  const owner_id = await getSessionUserId()
+  if (!owner_id) throw new Error('Not authenticated')
+  
+  const connRef = doc(db, 'connections', connection_id)
+  const connSnap = await getDoc(connRef)
+  if (!connSnap.exists()) throw new Error('Connection not found')
+  const connection = connSnap.data() as Connection
+
+  const oppRef = await addDoc(collection(db, 'opportunities'), {
+    owner_id,
+    lead_id: null,
+    connection_id,
+    account_name: payload?.account_name || `${connection.firstName || ''} ${connection.lastName || ''}`.trim() || connection.company || 'Unnamed',
+    lead_source: payload?.lead_source || 'direct',
+    stage: 'new',
+    created_at: new Date().toISOString(),
+    ...payload
+  })
+  const newDoc = await getDoc(oppRef)
+  return { id: newDoc.id, ...newDoc.data() } as Opportunity
+}
+
 export async function updateOpportunityStage(id: string, stage: string) {
   const oppRef = doc(db, 'opportunities', id)
   await updateDoc(oppRef, { stage, updated_at: new Date().toISOString() })
