@@ -9,6 +9,7 @@ import EditConnectionModal from '../ui/EditConnectionModal'
 import ConnectionDetailPage from './ConnectionDetailPage'
 import { deleteConnection } from '../lib/db'
 import ClickOutside from '../components/ClickOutside'
+import { createPortal } from 'react-dom'
 
 export default function ConnectionsPage() {
   const [connections, setConnections] = useState<Connection[]>([])
@@ -17,7 +18,7 @@ export default function ConnectionsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [viewId, setViewId] = useState<string | null>(null)
   const [editConn, setEditConn] = useState<Connection | null>(null)
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
+  const [menuState, setMenuState] = useState<{ id: string, x: number, y: number, c: Connection } | null>(null)
 
   const refresh = () => {
     listConnections().then(setConnections).catch((e) => setErr(e.message))
@@ -155,40 +156,18 @@ export default function ConnectionsPage() {
                       {/* Options Dropdown */}
                       <div className="relative">
                         <button
-                          onClick={() => setMenuOpenId(menuOpenId === c.id ? null : c.id)}
+                          onClick={(e) => {
+                            if (menuState?.id === c.id) {
+                              setMenuState(null)
+                            } else {
+                              const rect = e.currentTarget.getBoundingClientRect()
+                              setMenuState({ id: c.id, x: rect.right, y: rect.bottom + 4, c })
+                            }
+                          }}
                           className="inline-flex items-center justify-center rounded p-1.5 text-bodydark2 hover:bg-black/10 hover:text-black dark:hover:bg-white/10 dark:hover:text-white transition-colors"
                         >
                           <MdMoreVert size={20} />
                         </button>
-
-                        {menuOpenId === c.id && (
-                          <ClickOutside onClick={() => setMenuOpenId(null)}>
-                            <div className="absolute right-0 top-full z-40 mt-1 w-32 rounded-md border border-stroke bg-white px-2 py-2 shadow-default dark:border-strokedark dark:bg-boxdark">
-                              <button
-                                onClick={() => {
-                                  setEditConn(c)
-                                  setMenuOpenId(null)
-                                }}
-                                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-gray-2 hover:text-primary dark:hover:bg-meta-4"
-                              >
-                                <MdOutlineEdit size={16} /> Edit
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  if (!confirm(`Delete ${c.firstName} ${c.lastName}? This cannot be undone.`)) return
-                                  setMenuOpenId(null)
-                                  try {
-                                    await deleteConnection(c.id)
-                                    refresh()
-                                  } catch (e: any) { setErr(e.message) }
-                                }}
-                                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-meta-1 hover:bg-meta-1/10"
-                              >
-                                <MdOutlineDelete size={16} /> Delete
-                              </button>
-                            </div>
-                          </ClickOutside>
-                        )}
                       </div>
                     </div>
                   </td>
@@ -230,6 +209,46 @@ export default function ConnectionsPage() {
                 </div>
             </div>
         </div>
+      )}
+
+      {/* Context Menu Portal */}
+      {menuState && createPortal(
+        <div 
+          className="fixed inset-0 z-[9999]" 
+          onClick={() => setMenuState(null)} 
+          onContextMenu={(e) => { e.preventDefault(); setMenuState(null) }}
+        >
+          <div 
+            className="absolute rounded-md border border-stroke bg-white px-2 py-2 shadow-default dark:border-strokedark dark:bg-boxdark"
+            style={{ top: menuState.y, left: Math.max(16, menuState.x - 140), width: 140 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                setEditConn(menuState.c)
+                setMenuState(null)
+              }}
+              className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-gray-2 hover:text-primary dark:hover:bg-meta-4 text-black dark:text-white"
+            >
+              <MdOutlineEdit size={16} /> Edit
+            </button>
+            <button
+              onClick={async () => {
+                const c = menuState.c
+                if (!confirm(`Delete ${c.firstName} ${c.lastName}? This cannot be undone.`)) return
+                setMenuState(null)
+                try {
+                  await deleteConnection(c.id)
+                  refresh()
+                } catch (e: any) { setErr(e.message) }
+              }}
+              className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-meta-1 hover:bg-meta-1/10"
+            >
+              <MdOutlineDelete size={16} /> Delete
+            </button>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   )
