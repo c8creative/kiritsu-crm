@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { MdClose } from 'react-icons/md'
-import { updateConnection } from '../lib/db'
+import { updateConnection, createOpportunity } from '../lib/db'
 import type { Connection } from '../lib/types'
 
 type Props = {
@@ -12,6 +12,20 @@ type Props = {
 export default function EditConnectionModal({ connection, onClose, onSuccess }: Props) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+
+  const handleCreateOpp = async () => {
+    if (!confirm('Create a new opportunity in the Pipeline?')) return
+    setBusy(true)
+    setErr(null)
+    try {
+      await createOpportunity(connection.id)
+      onSuccess()
+      onClose()
+    } catch (e: any) {
+      setErr(e.message)
+      setBusy(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -132,11 +146,14 @@ export default function EditConnectionModal({ connection, onClose, onSuccess }: 
             </div>
           </div>
 
-          <div className="mt-8 flex gap-4">
+          <div className="mt-8 flex flex-col sm:flex-row gap-4">
             <button type="button" onClick={onClose} className="flex-1 rounded-lg border border-stroke py-3 font-medium text-black hover:bg-gray transition dark:border-strokedark dark:text-white dark:hover:bg-meta-4">
               Cancel
             </button>
-            <button type="submit" disabled={busy} className="flex-1 rounded-lg bg-black py-3 font-medium text-white shadow-md hover:bg-opacity-80 disabled:bg-opacity-50 transition dark:bg-white dark:text-black dark:hover:bg-opacity-80">
+            <button type="button" onClick={handleCreateOpp} disabled={busy} className="flex-1 rounded-lg border border-primary text-primary py-3 font-medium hover:bg-primary/10 transition dark:hover:bg-primary/20">
+              + Create Opp
+            </button>
+            <button type="submit" disabled={busy} className="flex-[1.5] rounded-lg bg-black py-3 font-medium text-white shadow-md hover:bg-opacity-80 disabled:bg-opacity-50 transition dark:bg-white dark:text-black dark:hover:bg-opacity-80">
               {busy ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
