@@ -58,11 +58,11 @@ export default function DashboardPage() {
           onClick={() => setActiveTab('followups')}
           className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all ${
             activeTab === 'followups'
-              ? 'border-b-2 border-primary text-primary'
+              ? 'border-b-2 border-primary text-primary dark:text-white'
               : 'text-body-color hover:text-primary dark:text-bodydark'
           }`}
         >
-          <MdOutlineSchedule size={20} />
+          <MdOutlineSchedule size={20} className={activeTab === 'followups' ? 'text-primary dark:text-white' : ''} />
           Follow-ups
           {(overdue.length + dueToday.length) > 0 && (
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-danger text-[10px] text-white">
@@ -74,11 +74,11 @@ export default function DashboardPage() {
           onClick={() => setActiveTab('newleads')}
           className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all ${
             activeTab === 'newleads'
-              ? 'border-b-2 border-primary text-primary'
+              ? 'border-b-2 border-primary text-primary dark:text-white'
               : 'text-body-color hover:text-primary dark:text-bodydark'
           }`}
         >
-          <MdOutlineStar size={20} />
+          <MdOutlineStar size={20} className={activeTab === 'newleads' ? 'text-primary dark:text-white' : ''} />
           New Leads
           {newLeads.length > 0 && (
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success text-[10px] text-white">
@@ -96,26 +96,34 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-9">
             <div className="rounded-lg border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1">
               <div className="mb-6 flex items-center justify-between">
-                <h4 className="text-xl font-bold text-black dark:text-white">Overdue</h4>
-                <span className="rounded bg-danger px-3 py-1 text-xs font-bold text-white shadow-sm ring-1 ring-inset ring-danger/20">Action required</span>
+                <div className="flex items-center gap-3">
+                  <h4 className="text-xl font-bold text-black dark:text-white">Overdue</h4>
+                  {overdue.length > 0 && (
+                    <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-danger px-2 text-xs font-bold text-white shadow-sm">
+                      {overdue.length}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="max-w-full overflow-x-auto">
                 <table className="w-full table-auto mb-4">
                   <thead>
-                    <tr className="bg-gray-2 text-left dark:bg-meta-4">
-                      <th className="py-4 px-4 font-medium text-black dark:text-white">Business</th>
-                      <th className="py-4 px-4 font-medium text-black dark:text-white">Due</th>
+                    <tr className="bg-gray-2 text-left dark:bg-meta-4 text-[13px]">
+                      <th className="py-4 px-4 font-medium text-black dark:text-white">Name</th>
+                      <th className="py-4 px-4 font-medium text-black dark:text-white">Company</th>
+                      <th className="py-4 px-4 font-medium text-black dark:text-white whitespace-nowrap">Due/Date/Time</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {overdue.map((o: any) => (
+                     {overdue.map((o: any) => (
                       <tr key={o.id} className="border-b border-stroke last:border-0 dark:border-strokedark">
+                        <td className="py-5 px-4 text-black dark:text-white font-medium">—</td>
                         <td className="py-5 px-4 text-black dark:text-white font-medium">{o.account_name}</td>
                         <td className="py-5 px-4 text-danger font-medium">{o.next_follow_up_date}</td>
                       </tr>
                     ))}
                     {overdue.length === 0 && (
-                      <tr><td colSpan={2} className="py-10 text-center text-slate-400 italic">No overdue follow-ups. Great job!</td></tr>
+                      <tr><td colSpan={3} className="py-10 text-center text-slate-400 italic">No overdue follow-ups. Great job!</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -126,24 +134,35 @@ export default function DashboardPage() {
           {/* Today & Upcoming column */}
           <div className="flex flex-col gap-9">
             <div className="rounded-lg border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1">
-              <h4 className="mb-6 text-xl font-bold text-black dark:text-white">Due Today</h4>
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h4 className="text-xl font-bold text-black dark:text-white">Due Today</h4>
+                  {dueToday.length > 0 && (
+                    <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-warning px-2 text-xs font-bold text-black shadow-sm">
+                      {dueToday.length}
+                    </span>
+                  )}
+                </div>
+              </div>
               <div className="max-w-full overflow-x-auto">
                 <table className="w-full table-auto mb-4">
                   <thead>
-                    <tr className="bg-gray-2 text-left dark:bg-meta-4">
-                      <th className="py-4 px-4 font-medium text-black dark:text-white">Business</th>
+                    <tr className="bg-gray-2 text-left dark:bg-meta-4 text-[13px]">
+                      <th className="py-4 px-4 font-medium text-black dark:text-white">Name</th>
+                      <th className="py-4 px-4 font-medium text-black dark:text-white">Company</th>
                       <th className="py-4 px-4 font-medium text-black dark:text-white">Time</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {dueToday.map((o: any) => (
+                     {dueToday.map((o: any) => (
                       <tr key={o.id} className="border-b border-stroke last:border-0 dark:border-strokedark">
+                        <td className="py-5 px-4 text-black dark:text-white font-medium">—</td>
                         <td className="py-5 px-4 text-black dark:text-white font-medium">{o.account_name}</td>
                         <td className="py-5 px-4 text-warning font-medium">Today</td>
                       </tr>
                     ))}
-                    {dueToday.length === 0 && (
-                      <tr><td colSpan={2} className="py-10 text-center text-slate-400 italic">Nothing scheduled for today.</td></tr>
+                     {dueToday.length === 0 && (
+                      <tr><td colSpan={3} className="py-10 text-center text-slate-400 italic">Nothing scheduled for today.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -155,22 +174,24 @@ export default function DashboardPage() {
               <div className="max-w-full overflow-x-auto">
                 <table className="w-full table-auto mb-4">
                   <thead>
-                    <tr className="bg-gray-2 text-left dark:bg-meta-4">
-                      <th className="py-4 px-4 font-medium text-black dark:text-white">Business</th>
+                    <tr className="bg-gray-2 text-left dark:bg-meta-4 text-[13px]">
+                      <th className="py-4 px-4 font-medium text-black dark:text-white">Name</th>
+                      <th className="py-4 px-4 font-medium text-black dark:text-white">Company</th>
                       <th className="py-4 px-4 font-medium text-black dark:text-white">Date</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {upcoming.map((o: any) => (
+                     {upcoming.map((o: any) => (
                       <tr key={o.id} className="border-b border-stroke last:border-0 dark:border-strokedark">
+                        <td className="py-5 px-4 text-black dark:text-white font-medium">—</td>
                         <td className="py-5 px-4 text-black dark:text-white font-medium">{o.account_name}</td>
                         <td className="py-5 px-4 text-body-color dark:text-bodydark">
                           {format(parseISO(o.next_follow_up_date), 'MMM d')}
                         </td>
                       </tr>
                     ))}
-                    {upcoming.length === 0 && (
-                      <tr><td colSpan={2} className="py-10 text-center text-slate-400 italic">No upcoming follow-ups.</td></tr>
+                     {upcoming.length === 0 && (
+                      <tr><td colSpan={3} className="py-10 text-center text-slate-400 italic">No upcoming follow-ups.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -185,18 +206,20 @@ export default function DashboardPage() {
           <div className="max-w-full overflow-x-auto">
             <table className="w-full table-auto mb-4">
               <thead>
-                <tr className="bg-gray-2 text-left dark:bg-meta-4">
-                  <th className="py-4 px-4 font-medium text-black dark:text-white">Business</th>
+                <tr className="bg-gray-2 text-left dark:bg-meta-4 text-[13px]">
+                  <th className="py-4 px-4 font-medium text-black dark:text-white">Name</th>
+                  <th className="py-4 px-4 font-medium text-black dark:text-white">Company</th>
                   <th className="py-4 px-4 font-medium text-black dark:text-white">Source</th>
                   <th className="py-4 px-4 font-medium text-black dark:text-white">Created</th>
                 </tr>
               </thead>
               <tbody>
                 {newLeads.map((o: any) => (
-                  <tr key={o.id} className="border-b border-stroke last:border-0 dark:border-strokedark">
+                   <tr key={o.id} className="border-b border-stroke last:border-0 dark:border-strokedark">
+                    <td className="py-5 px-4 text-black dark:text-white font-medium">—</td>
                     <td className="py-5 px-4 text-black dark:text-white font-medium">{o.account_name}</td>
                     <td className="py-5 px-4 text-body-color dark:text-bodydark">
-                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                        <span className="rounded-full bg-primary/10 dark:bg-primary/20 px-2 py-0.5 text-xs text-primary dark:text-blue-300">
                             {o.lead_source || 'Unknown'}
                         </span>
                     </td>
@@ -205,8 +228,8 @@ export default function DashboardPage() {
                     </td>
                   </tr>
                 ))}
-                {newLeads.length === 0 && (
-                  <tr><td colSpan={3} className="py-20 text-center text-slate-400 italic">No new leads. Time to find some prospects!</td></tr>
+                 {newLeads.length === 0 && (
+                  <tr><td colSpan={4} className="py-20 text-center text-slate-400 italic">No new leads. Time to find some prospects!</td></tr>
                 )}
               </tbody>
             </table>

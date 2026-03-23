@@ -176,8 +176,8 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
           Log Out
         </button>
         <div className="text-center">
-            <p className="text-xs font-medium font-inter" style={{ color: sidebarText ? `${sidebarText}99` : '#64748b' }}>
-              © {new Date().getFullYear()} {companyName || 'Kiritsu Services'}
+            <p className="text-[10px] font-medium font-inter tracking-wider" style={{ color: sidebarText ? `${sidebarText}99` : '#64748b' }}>
+              © 2026 {companyName || 'Kiritsu Services'} | C8Creates
             </p>
         </div>
       </div>
