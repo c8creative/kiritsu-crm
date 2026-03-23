@@ -12,7 +12,7 @@ import {
   serverTimestamp,
   setDoc
 } from 'firebase/firestore'
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as fSignOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as fSignOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, auth, storage } from './firebase'
 import type { Lead, Connection, Opportunity, Job, Visit } from './types'
@@ -85,6 +85,10 @@ export async function signInWithGoogle() {
 
 export async function signOut() {
   return fSignOut(auth)
+}
+
+export async function resetPassword(email: string) {
+  return sendPasswordResetEmail(auth, email)
 }
 
 // Leads
