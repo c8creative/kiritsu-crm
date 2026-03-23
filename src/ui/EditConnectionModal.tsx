@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { MdClose } from 'react-icons/md'
 import { updateConnection, createOpportunity } from '../lib/db'
+import { useDialog } from '../contexts/DialogContext'
 import type { Connection } from '../lib/types'
 
 type Props = {
@@ -12,9 +13,11 @@ type Props = {
 export default function EditConnectionModal({ connection, onClose, onSuccess }: Props) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const dialog = useDialog()
 
   const handleCreateOpp = async () => {
-    if (!confirm('Create a new opportunity in the Pipeline?')) return
+    const confirmed = await dialog.confirm('Create Opportunity', 'Create a new opportunity in the Pipeline?')
+    if (!confirmed) return
     setBusy(true)
     setErr(null)
     try {

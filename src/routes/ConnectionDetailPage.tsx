@@ -3,11 +3,13 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { addActivity, getConnection, deleteConnection, createOpportunity } from '../lib/db'
 import { MdOutlinePeople, MdOutlineEmail, MdOutlinePhone, MdOutlineLanguage, MdOutlineLocationOn, MdOutlineHistory, MdOutlineEdit, MdOutlineDelete } from 'react-icons/md'
 import EditConnectionModal from '../ui/EditConnectionModal'
+import { useDialog } from '../contexts/DialogContext'
 
 export default function ConnectionDetailPage({ id: propId, isModal, onClose }: { id?: string, isModal?: boolean, onClose?: () => void }) {
   const params = useParams()
   const navigate = useNavigate()
   const id = propId || params.id
+  const dialog = useDialog()
   const [data, setData] = useState<any>(null)
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -52,7 +54,8 @@ export default function ConnectionDetailPage({ id: propId, isModal, onClose }: {
 
   const handleCreateOpp = async () => {
     if (!id) return
-    if (!confirm('Create a new opportunity in the Pipeline?')) return
+    const confirmed = await dialog.confirm('Create Opportunity', 'Create a new opportunity in the Pipeline?')
+    if (!confirmed) return
     
     setBusy(true)
     try {
@@ -98,7 +101,8 @@ export default function ConnectionDetailPage({ id: propId, isModal, onClose }: {
             </button>
             <button
               onClick={async () => {
-                if (!confirm(`Delete ${connection.firstName} ${connection.lastName}? This cannot be undone.`)) return
+                const confirmed = await dialog.confirm('Delete Connection', `Delete ${connection.firstName} ${connection.lastName}? This cannot be undone.`, { isDestructive: true })
+                if (!confirmed) return
                 try {
                   await deleteConnection(id!)
                   if (onClose) onClose()

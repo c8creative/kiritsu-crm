@@ -10,6 +10,7 @@ import ConnectionDetailPage from './ConnectionDetailPage'
 import { deleteConnection } from '../lib/db'
 import ClickOutside from '../components/ClickOutside'
 import { createPortal } from 'react-dom'
+import { useDialog } from '../contexts/DialogContext'
 
 export default function ConnectionsPage() {
   const [connections, setConnections] = useState<Connection[]>([])
@@ -19,6 +20,7 @@ export default function ConnectionsPage() {
   const [viewId, setViewId] = useState<string | null>(null)
   const [editConn, setEditConn] = useState<Connection | null>(null)
   const [menuState, setMenuState] = useState<{ id: string, x: number, y: number, c: Connection } | null>(null)
+  const dialog = useDialog()
 
   const refresh = () => {
     listConnections().then(setConnections).catch((e) => setErr(e.message))
@@ -235,8 +237,10 @@ export default function ConnectionsPage() {
             <button
               onClick={async () => {
                 const c = menuState.c
-                if (!confirm(`Delete ${c.firstName} ${c.lastName}? This cannot be undone.`)) return
                 setMenuState(null)
+                const confirmed = await dialog.confirm('Delete Connection', `Delete ${c.firstName} ${c.lastName}? This cannot be undone.`, { isDestructive: true })
+                if (!confirmed) return
+                
                 try {
                   await deleteConnection(c.id)
                   refresh()
