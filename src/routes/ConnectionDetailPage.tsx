@@ -84,9 +84,11 @@ export default function ConnectionDetailPage({ id: propId, isModal, onClose }: {
                 </p>
                 <div className="mt-2 text-xs">
                     <span className={`inline-flex rounded-full bg-opacity-10 py-1 px-3 font-medium uppercase tracking-wider ${
-                        connection.status === 'prospect' ? 'bg-warning text-warning' : 'bg-success text-success'
+                        connection.status === 'dnc' ? 'bg-danger text-danger' :
+                        connection.status === 'one-time' ? 'bg-warning text-warning' :
+                        'bg-success text-success'
                     }`}>
-                        {connection.status}
+                        {connection.status || 'Prospect'}
                     </span>
                 </div>
             </div>

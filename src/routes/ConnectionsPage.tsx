@@ -135,10 +135,12 @@ export default function ConnectionsPage() {
                     <p className="text-black dark:text-white">{c.title || '—'}</p>
                   </td>
                   <td className="py-5 px-4">
-                    <span className={`inline-flex rounded-full bg-opacity-10 py-1 px-3 text-sm font-medium ${
-                        c.status === 'prospect' ? 'bg-warning text-warning' : 'bg-success text-success'
+                    <span className={`inline-flex rounded-full bg-opacity-10 py-1 px-3 text-sm font-medium capitalize ${
+                        c.status === 'dnc' ? 'bg-danger text-danger' :
+                        c.status === 'one-time' ? 'bg-warning text-warning' :
+                        'bg-success text-success'
                     }`}>
-                      {c.status || 'lead'}
+                      {c.status === 'dnc' ? 'DNC' : c.status || 'prospect'}
                     </span>
                   </td>
                   <td className="py-5 px-4">
