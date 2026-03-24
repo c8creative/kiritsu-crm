@@ -1,6 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useState } from 'react'
+import { MdMoreVert, MdOutlineArchive, MdOutlineCalendarToday } from 'react-icons/md'
 
 type Stage = { key: string; label: string; icon?: string }
 
@@ -10,24 +11,28 @@ export default function SortableCard({
   stages,
   title,
   subtitle,
-  value,
+  source,
+  updatedAt,
   followUpDate,
   followUpNote,
   disabled,
   onFollowUp,
   onMove,
+  onArchive,
 }: {
   id: string
   stage?: string
   stages?: readonly Stage[]
   title: string
   subtitle?: string | null
-  value: number | null
+  source?: string | null
+  updatedAt?: string | null
   followUpDate: string | null
   followUpNote: string | null
   disabled?: boolean
   onFollowUp: (date: string | null, note: string | null) => Promise<void>
   onMove?: (id: string, stage: string) => Promise<void>
+  onArchive?: () => Promise<void>
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
   const style = {
@@ -37,6 +42,7 @@ export default function SortableCard({
   }
 
   const [editing, setEditing] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [date, setDate] = useState<string>(followUpDate ?? '')
   const [note, setNote] = useState<string>(followUpNote ?? '')
 
@@ -45,6 +51,8 @@ export default function SortableCard({
       ref={setNodeRef}
       style={style as any}
       className="rounded-lg border-2 border-slate-300 bg-white p-4 shadow-sm transition hover:shadow-md hover:border-slate-400 dark:border-[#2E3A47] dark:bg-[#24303F] relative z-10"
+      {...attributes}
+      {...listeners}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div>
@@ -53,35 +61,76 @@ export default function SortableCard({
             <p className="text-[10px] uppercase font-bold text-slate-400 mt-1">{subtitle}</p>
           )}
         </div>
-        <div 
-          className="hidden sm:flex cursor-move p-1.5 text-body-color hover:text-black dark:hover:text-white hover:bg-gray-2 dark:hover:bg-boxdark-2 rounded-lg transition-colors"
-          {...attributes}
-          {...listeners}
-          title="Drag to move"
-        >
-          <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M5 4h2v2H5V4zm4 0h2v2H9V4zM5 7h2v2H5V7zm4 0h2v2H9V7zm-4 3h2v2H5v-2zm4 0h2v2H9v-2z" />
-          </svg>
+        <div className="relative">
+          <button
+            type="button"
+            className="p-1.5 text-body-color hover:text-black dark:text-bodydark dark:hover:text-white rounded-lg transition-colors"
+            onClick={(e) => {
+              e.stopPropagation()
+              setMenuOpen(!menuOpen)
+              setEditing(false)
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <MdMoreVert size={20} />
+          </button>
+
+          {menuOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setMenuOpen(false)
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+              />
+              <div 
+                className="absolute right-0 top-full mt-1 z-50 w-48 rounded-md border border-stroke bg-white py-1 shadow-default dark:border-strokedark dark:bg-boxdark"
+                onClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-left hover:bg-gray-2 dark:hover:bg-meta-4 hover:text-primary transition-colors text-black dark:text-white"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setMenuOpen(false)
+                    setEditing(true)
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <MdOutlineCalendarToday size={16} /> Set Follow-up
+                </button>
+                {onArchive && (
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-left hover:bg-meta-1/10 text-meta-1 transition-colors"
+                    onClick={async (e) => {
+                      e.stopPropagation()
+                      setMenuOpen(false)
+                      await onArchive()
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <MdOutlineArchive size={16} /> Archive
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
-      <div className="text-xs font-medium text-body-color dark:text-bodydark mb-4 flex items-center gap-3">
-        <span>{value != null ? `$${value}/mo` : '—'}</span>
-        <span className="opacity-60">{followUpDate ?? '—'}</span>
+      <div className="text-xs font-medium text-body-color dark:text-bodydark mb-4 flex items-center justify-between">
+        <span title="Source" className="bg-gray-2 dark:bg-meta-4 px-2 py-0.5 rounded capitalize">
+          {source && source !== 'Unknown' ? source : 'No Source'}
+        </span>
+        <span title="Date Last Updated" className="opacity-60">
+          {updatedAt ? new Date(updatedAt).toLocaleDateString() : '—'}
+        </span>
       </div>
 
       <div className="flex flex-col gap-2 relative z-50">
-        <button
-          className="flex w-full justify-center rounded border-2 border-slate-300 py-1.5 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-meta-4 transition-colors"
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            setEditing((v) => !v)
-          }}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          {editing ? 'Cancel' : 'Set Follow-up'}
-        </button>
-
         {/* Status Dropdown */}
         {stages && onMove && stage && (
           <div className="flex flex-col gap-1">
@@ -131,6 +180,18 @@ export default function SortableCard({
           </div>
           <div className="flex gap-2">
             <button
+              className="flex flex-1 justify-center rounded border-2 border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-meta-4"
+              type="button"
+              onClick={async (e) => {
+                e.stopPropagation()
+                setEditing(false)
+                setDate(followUpDate ?? '')
+                setNote(followUpNote ?? '')
+              }}
+            >
+              Cancel
+            </button>
+            <button
               className="flex flex-1 justify-center rounded bg-primary py-2 text-sm font-medium text-white hover:bg-opacity-90"
               type="button"
               onClick={async (e) => {
@@ -142,8 +203,9 @@ export default function SortableCard({
               Save
             </button>
             <button
-              className="flex flex-1 justify-center rounded border-2 border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-meta-4"
+              className="flex flex-1 justify-center rounded border-2 border-meta-1/20 bg-meta-1/10 text-meta-1 py-2 text-sm font-medium hover:bg-meta-1 hover:text-white transition-colors"
               type="button"
+              title="Clear Follow-up"
               onClick={async (e) => {
                 e.stopPropagation();
                 await onFollowUp(null, null)

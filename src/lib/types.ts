@@ -11,6 +11,7 @@ export type Lead = {
   address_text: string | null
   status: string
   created_at: string
+  archived?: boolean
 }
 
 export type Connection = {
@@ -32,6 +33,7 @@ export type Connection = {
   timeZone: string | null
   notes: string | null
   status: string // e.g., 'prospect', 'customer'
+  archived?: boolean
   created_at: string
 }
 
@@ -46,7 +48,9 @@ export type Opportunity = {
   next_follow_up_date: string | null
   next_follow_up_note: string | null
   lead_source: string | null
+  archived?: boolean
   created_at: string
+  updated_at?: string
 }
 
 export type Job = {

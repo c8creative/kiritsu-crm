@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
-import { createLead, convertLeadToConnection, listLeads } from '../lib/db'
+import { convertLeadToConnection, listLeads, archiveLead } from '../lib/db'
 import type { Lead } from '../lib/types'
-import CsvImport from '../ui/CsvImport'
-
-type LeadSource = 'door' | 'website' | 'referral' | 'other'
+import { MdAdd, MdOutlineFileUpload } from 'react-icons/md'
+import AddLeadModal from '../ui/AddLeadModal'
+import ImportLeadsModal from '../ui/ImportLeadsModal'
+import { useDialog } from '../contexts/DialogContext'
 
 export default function InboxPage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-  const [leadName, setLeadName] = useState('')
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
+  
+  const [addOpen, setAddOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
+  const dialog = useDialog()
 
   const refresh = async () => {
     setErr(null)
@@ -24,54 +26,9 @@ export default function InboxPage() {
   }, [])
 
   const newLeads = useMemo(
-    () => leads.filter((l) => l.status === 'new'),
+    () => leads.filter((l) => l.status === 'new' && !l.archived),
     [leads],
   )
-
-  const onCreate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErr(null)
-
-    const form = e.target as HTMLFormElement
-    const fd = new FormData(form)
-
-    const source = (String(fd.get('source') || 'door') as LeadSource) ?? 'door'
-    const fName = String(fd.get('firstName') || '').trim()
-    const lName = String(fd.get('lastName') || '').trim()
-    const name = String(fd.get('name') || '').trim()
-    const phoneRaw = String(fd.get('phone') || '').trim()
-    const emailRaw = String(fd.get('email') || '').trim()
-    const addressRaw = String(fd.get('address_text') || '').trim()
-
-    if (!name && !fName && !lName) {
-      setErr('First, Last, or Business name is required.')
-      return
-    }
-
-    setBusy(true)
-    try {
-      await createLead({
-        source,
-        firstName: fName.length ? fName : null,
-        lastName: lName.length ? lName : null,
-        name,
-        phone: phoneRaw.length ? phoneRaw : null,
-        email: emailRaw.length ? emailRaw : null,
-        address_text: addressRaw.length ? addressRaw : null,
-        status: 'new',
-      } as any)
-
-      setLeadName('')
-      setFirstName('')
-      setLastName('')
-      form.reset()
-      await refresh()
-    } catch (e: any) {
-      setErr(e?.message ?? 'Failed to create lead')
-    } finally {
-      setBusy(false)
-    }
-  }
 
   const onConvert = async (leadId: string) => {
     setErr(null)
@@ -86,188 +43,128 @@ export default function InboxPage() {
     }
   }
 
+  const onArchive = async (leadId: string) => {
+    const confirmed = await dialog.confirm('Archive Lead', 'Are you sure you want to archive this lead?', { isDestructive: false })
+    if (!confirmed) return
+    setErr(null)
+    setBusy(true)
+    try {
+      await archiveLead(leadId)
+      await refresh()
+    } catch (e: any) {
+      setErr(e?.message ?? 'Failed to archive lead')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-title-md2 font-bold text-black dark:text-white">
-          Leads
-        </h2>
-        <span className="inline-flex rounded-full bg-primary/10 py-1 px-3 text-sm font-medium text-primary">
-          New leads: {newLeads.length}
-        </span>
+        <div>
+          <h2 className="text-title-md2 font-bold text-black dark:text-white flex items-center gap-2">
+            Leads
+          </h2>
+          <p className="text-sm font-medium text-body-color dark:text-bodydark mt-1">
+            New incoming leads to be converted or archived
+          </p>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <button 
+              onClick={() => setImportOpen(true)}
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-lg bg-gray-2 py-2.5 px-6 text-center font-medium text-black hover:bg-gray-3 dark:bg-meta-4 dark:text-white dark:hover:bg-boxdark-2 transition-colors lg:px-6"
+          >
+              <MdOutlineFileUpload size={20} />
+              Import
+          </button>
+          <button 
+              onClick={() => setAddOpen(true)}
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-lg bg-primary py-2.5 px-6 text-center font-medium text-white hover:bg-opacity-90 lg:px-8"
+          >
+              <MdAdd size={20} />
+              Add New
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="flex flex-col gap-6">
-          <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-            <div className="border-b border-stroke py-4 px-6.5 dark:border-strokedark">
-              <h3 className="font-bold text-lg text-black dark:text-white">
-                Add lead
-              </h3>
-            </div>
-            <form onSubmit={onCreate} className="p-6.5 flex flex-col gap-5">
-              <div className="flex flex-col sm:flex-row gap-5">
-                <div className="w-full sm:w-1/3">
-                  <label className="mb-2.5 block text-black dark:text-white">Source</label>
-                  <select name="source" className="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" defaultValue="door">
-                    <option value="door">Door / Walk-in</option>
-                    <option value="website">Website</option>
-                    <option value="referral">Referral</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                <div className="w-full sm:w-2/3">
-                  <label className="mb-2.5 block text-black dark:text-white">Business name</label>
-                  <input
-                    name="name"
-                    value={leadName}
-                    onChange={(e) => setLeadName(e.target.value)}
-                    className="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
-                    placeholder="Restaurant / Business"
-                  />
-                </div>
-              </div>
+      <AddLeadModal isOpen={addOpen} onClose={() => setAddOpen(false)} onSuccess={refresh} />
+      <ImportLeadsModal isOpen={importOpen} onClose={() => setImportOpen(false)} onSuccess={refresh} />
 
-              <div className="flex flex-col sm:flex-row gap-5">
-                <div className="w-full sm:w-1/2">
-                  <label className="mb-2.5 block text-black dark:text-white">First Name</label>
-                  <input
-                    name="firstName"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
-                    placeholder="John"
-                  />
-                </div>
-                <div className="w-full sm:w-1/2">
-                  <label className="mb-2.5 block text-black dark:text-white">Last Name</label>
-                  <input
-                    name="lastName"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
-                    placeholder="Doe"
-                  />
-                </div>
-              </div>
+      {err && <div className="mb-4 text-meta-1">{err}</div>}
 
-              <div className="flex flex-col sm:flex-row gap-5">
-                <div className="w-full sm:w-1/2">
-                  <label className="mb-2.5 block text-black dark:text-white">Phone</label>
-                  <input name="phone" className="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" placeholder="703-555-1234" />
-                </div>
-                <div className="w-full sm:w-1/2">
-                  <label className="mb-2.5 block text-black dark:text-white">Email</label>
-                  <input name="email" className="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" placeholder="gm@restaurant.com" />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-2.5 block text-black dark:text-white">Address / Notes</label>
-                <textarea
-                  name="address_text"
-                  className="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
-                  rows={3}
-                  placeholder="Address or quick notes"
-                />
-              </div>
-
-              <div className="flex flex-col sm:flex-row-reverse sm:items-center justify-between gap-4 mt-2 text-right">
-                <button 
-                  className="flex w-full sm:w-auto justify-center rounded bg-primary py-3 px-8 font-medium text-gray hover:bg-opacity-90 disabled:bg-slate-400 disabled:cursor-not-allowed" 
-                  disabled={busy || (!leadName.trim() && !firstName.trim() && !lastName.trim())}
-                >
-                  {busy ? 'Adding…' : 'Add Lead'}
-                </button>
-                <span className="text-sm text-body-color dark:text-bodydark flex-1 sm:text-left">
-                  Convert a lead to create a Connection + Opportunity.
-                </span>
-              </div>
-            </form>
-
-            {err && (
-              <div className="px-6.5 pb-6 text-meta-1">
-                {err}
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-            <div className="border-b border-stroke py-4 px-6.5 dark:border-strokedark">
-              <h3 className="font-bold text-lg text-black dark:text-white">
-                Import CSV
-              </h3>
-            </div>
-            <div className="p-6.5">
-              <CsvImport onImported={refresh} />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-6">
-          <div className="rounded-lg border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1">
-            <h4 className="mb-6 text-xl font-bold text-black dark:text-white">
-              New leads
-            </h4>
-
-            <div className="flex flex-col">
-              <div className="grid grid-cols-4 rounded-lg bg-gray-2 dark:bg-meta-4 sm:grid-cols-4">
-                <div className="p-2.5 xl:p-5">
-                  <h5 className="text-sm font-bold uppercase xsm:text-base">Name</h5>
-                </div>
-                <div className="p-2.5 text-center xl:p-5">
-                  <h5 className="text-sm font-bold uppercase xsm:text-base">Source</h5>
-                </div>
-                <div className="p-2.5 text-center xl:p-5">
-                  <h5 className="text-sm font-bold uppercase xsm:text-base">Contact</h5>
-                </div>
-                <div className="hidden p-2.5 text-center sm:block xl:p-5">
-                  <h5 className="text-sm font-bold uppercase xsm:text-base">Action</h5>
-                </div>
-              </div>
-
+      <div className="rounded-lg border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+        <div className="max-w-full overflow-x-auto">
+          <table className="w-full table-auto">
+            <thead>
+              <tr className="bg-gray-2 text-left dark:bg-meta-4">
+                <th className="py-4 px-4 font-bold text-black dark:text-white xl:pl-8 uppercase text-xs">Name</th>
+                <th className="py-4 px-4 font-bold text-black dark:text-white uppercase text-xs">Source</th>
+                <th className="py-4 px-4 font-bold text-black dark:text-white uppercase text-xs">Contact</th>
+                <th className="py-4 px-4 font-bold text-black dark:text-white uppercase text-xs text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
               {newLeads.map((l, key) => (
-                <div
-                  className={`grid grid-cols-4 sm:grid-cols-4 ${
-                    key === newLeads.length - 1
-                      ? ''
-                      : 'border-b border-stroke dark:border-strokedark'
-                  }`}
-                  key={l.id}
+                <tr 
+                  key={l.id} 
+                  className={`hover:bg-gray-2 dark:hover:bg-meta-4 transition-colors ${key === newLeads.length - 1 ? '' : 'border-b border-stroke dark:border-strokedark'}`}
                 >
-                  <div className="flex items-center gap-3 p-2.5 xl:p-5">
-                    <p className="hidden text-black dark:text-white sm:block">
-                      {l.name}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center justify-center p-2.5 xl:p-5">
-                    <p className="text-black dark:text-white">{l.source}</p>
-                  </div>
-
-                  <div className="flex items-center justify-center p-2.5 xl:p-5">
-                    <p className="text-meta-3 truncate max-w-full text-xs sm:text-base">{l.email || l.phone || '—'}</p>
-                  </div>
-
-                  <div className="hidden items-center justify-center p-2.5 sm:flex xl:p-5">
-                    <button
-                      className="flex justify-center rounded bg-primary py-1 px-3 text-sm font-medium text-gray hover:bg-opacity-90"
-                      onClick={() => onConvert(l.id)}
-                      disabled={busy}
-                    >
-                      Convert
-                    </button>
-                  </div>
-                </div>
+                  <td className="py-5 px-4 xl:pl-8">
+                    <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                            {(l.firstName?.[0] || '') + (l.lastName?.[0] || '') || l.name?.[0] || '?'}
+                        </div>
+                        <div>
+                            <p className="text-black dark:text-white font-semibold">
+                                {l.firstName || l.lastName ? `${l.firstName || ''} ${l.lastName || ''}`.trim() : (l.name || 'Unnamed')}
+                            </p>
+                            {l.firstName || l.lastName ? <p className="text-xs text-bodydark2">{l.name}</p> : null}
+                        </div>
+                    </div>
+                  </td>
+                  <td className="py-5 px-4">
+                    <p className="text-black dark:text-white capitalize">{l.source}</p>
+                  </td>
+                  <td className="py-5 px-4 font-medium">
+                    <div className="flex flex-col gap-1">
+                      {l.phone ? (
+                        <a href={`tel:${l.phone}`} className="text-primary hover:underline">{l.phone}</a>
+                      ) : (
+                        <span className="text-bodydark2">—</span>
+                      )}
+                      {l.email && <span className="text-xs text-bodydark2 truncate max-w-[150px]">{l.email}</span>}
+                    </div>
+                  </td>
+                  <td className="py-5 px-4">
+                    <div className="flex items-center justify-end gap-3">
+                      <button
+                        className="rounded border border-meta-1/50 bg-meta-1/10 text-meta-1 hover:bg-meta-1 hover:text-white py-1.5 px-4 text-sm font-medium transition-colors"
+                        onClick={() => onArchive(l.id)}
+                        disabled={busy}
+                      >
+                        Archive
+                      </button>
+                      <button
+                        className="rounded bg-primary py-1.5 px-6 text-sm font-medium text-white hover:bg-opacity-90 transition-colors"
+                        onClick={() => onConvert(l.id)}
+                        disabled={busy}
+                      >
+                        Convert
+                      </button>
+                    </div>
+                  </td>
+                </tr>
               ))}
-
               {newLeads.length === 0 && (
-                <div className="p-5 text-center text-body-color dark:text-bodydark">
-                  No new leads.
-                </div>
+                <tr>
+                  <td colSpan={4} className="py-10 text-center text-body-color dark:text-bodydark italic">
+                    No new leads.
+                  </td>
+                </tr>
               )}
-            </div>
-          </div>
+            </tbody>
+          </table>
         </div>
       </div>
     </>

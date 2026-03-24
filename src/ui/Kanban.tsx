@@ -38,13 +38,17 @@ type Stage = { key: string; label: string; icon?: string }
 export default function Kanban({
   stages,
   itemsByStage,
+  connections,
   onMove,
   onFollowUp,
+  onArchive,
 }: {
   stages: readonly Stage[]
   itemsByStage: Record<string, any[]>
+  connections?: Record<string, any>
   onMove: (id: string, stage: string) => Promise<void>
   onFollowUp: (id: string, date: string | null, note: string | null) => Promise<void>
+  onArchive?: (id: string) => Promise<void>
 }) {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -57,6 +61,21 @@ export default function Kanban({
     }
     return null
   }, [activeId, itemsByStage])
+
+  const getCardProps = (it: any) => {
+    const c = connections?.[it.connection_id]
+    const nameStr = (c?.firstName || c?.lastName)
+      ? `${c.lastName || ''}${c.lastName && c.firstName ? ', ' : ''}${c.firstName || ''}`
+      : ''
+    const companyName = c?.company || it.account_name || 'Business'
+    
+    const title = nameStr || companyName
+    const subtitle = nameStr ? companyName : 'No Name'
+    const source = it.lead_source || 'Unknown'
+    const updatedAt = it.updated_at || it.created_at
+
+    return { title, subtitle, source, updatedAt }
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -139,22 +158,27 @@ export default function Kanban({
               </div>
               <DroppableZone id={stage.key}>
                 <SortableContext items={items.map((x) => x.id)} strategy={verticalListSortingStrategy}>
-                  {items.map((it) => (
-                    <SortableCard
-                      key={it.id}
-                      id={it.id}
-                      stage={stage.key}
-                      stages={stages}
-                      title={it.account_name || 'Business'}
-                      subtitle={it.lead_source}
-                      value={it.value_monthly}
-                      followUpDate={it.next_follow_up_date}
-                      followUpNote={it.next_follow_up_note}
-                      disabled={busyId === it.id}
-                      onFollowUp={async (date, note) => onFollowUp(it.id, date, note)}
-                      onMove={onMove}
-                    />
-                  ))}
+                  {items.map((it) => {
+                    const props = getCardProps(it)
+                    return (
+                      <SortableCard
+                        key={it.id}
+                        id={it.id}
+                        stage={stage.key}
+                        stages={stages}
+                        title={props.title}
+                        subtitle={props.subtitle}
+                        source={props.source}
+                        updatedAt={props.updatedAt}
+                        followUpDate={it.next_follow_up_date}
+                        followUpNote={it.next_follow_up_note}
+                        disabled={busyId === it.id}
+                        onFollowUp={async (date, note) => onFollowUp(it.id, date, note)}
+                        onMove={onMove}
+                        onArchive={onArchive ? async () => onArchive(it.id) : undefined}
+                      />
+                    )
+                  })}
                   {items.length === 0 && (
                     <div className="flex items-center justify-center p-8 text-sm font-medium border-2 border-dashed border-slate-300 dark:border-slate-700 text-slate-400 rounded-xl bg-transparent min-h-[100px] border-spacing-4">
                       Drop here
@@ -169,19 +193,14 @@ export default function Kanban({
 
       <DragOverlay dropAnimation={{
         sideEffects: defaultDropAnimationSideEffects({
-          styles: {
-            active: {
-              opacity: '0.4',
-            },
-          },
+          styles: { active: { opacity: '0.4' } },
         }),
       }}>
         {activeItem ? (
           <div className="w-64 rotate-3 scale-105 opacity-90">
             <SortableCard
               id={activeItem.id}
-              title={activeItem.account_name || 'Opportunity'}
-              value={activeItem.value_monthly}
+              {...getCardProps(activeItem)}
               followUpDate={activeItem.next_follow_up_date}
               followUpNote={activeItem.next_follow_up_note}
               onFollowUp={async () => {}}

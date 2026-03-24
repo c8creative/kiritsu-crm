@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { listConnections } from '../lib/db'
+import { listConnections, archiveConnection, deleteConnection } from '../lib/db'
 import type { Connection } from '../lib/types'
-import { MdOutlinePeople, MdSearch, MdAdd, MdClose, MdOutlineVisibility, MdOutlineEdit, MdOutlineDelete, MdMoreVert } from 'react-icons/md'
+import { MdOutlinePeople, MdSearch, MdAdd, MdClose, MdOutlineVisibility, MdOutlineEdit, MdOutlineDelete, MdMoreVert, MdArchive } from 'react-icons/md'
 import ConnectionImport from '../ui/ConnectionImport'
 import AddConnectionModal from '../ui/AddConnectionModal'
 import EditConnectionModal from '../ui/EditConnectionModal'
 import ConnectionDetailPage from './ConnectionDetailPage'
-import { deleteConnection } from '../lib/db'
 import ClickOutside from '../components/ClickOutside'
 import { createPortal } from 'react-dom'
 import { useDialog } from '../contexts/DialogContext'
@@ -20,6 +19,7 @@ export default function ConnectionsPage() {
   const [viewId, setViewId] = useState<string | null>(null)
   const [editConn, setEditConn] = useState<Connection | null>(null)
   const [menuState, setMenuState] = useState<{ id: string, x: number, y: number, c: Connection } | null>(null)
+  const [archivedOpen, setArchivedOpen] = useState(false)
   const dialog = useDialog()
   const navigate = useNavigate()
 
@@ -33,13 +33,21 @@ export default function ConnectionsPage() {
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase()
-    if (!s) return connections
-    return connections.filter((c) => 
-      `${c.firstName} ${c.lastName}`.toLowerCase().includes(s) ||
-      (c.company || '').toLowerCase().includes(s) ||
-      (c.email || '').toLowerCase().includes(s)
-    )
+    return connections.filter((c) => {
+      if (c.archived) return false
+      if (!s) return true
+      return `${c.firstName} ${c.lastName}`.toLowerCase().includes(s) ||
+        (c.company || '').toLowerCase().includes(s) ||
+        (c.email || '').toLowerCase().includes(s)
+    })
   }, [connections, q])
+
+  const archivedConns = useMemo(() => connections.filter(c => c.archived), [connections])
+
+  const onUnarchive = async (id: string) => {
+    await archiveConnection(id, false)
+    await refresh()
+  }
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -52,8 +60,8 @@ export default function ConnectionsPage() {
             Consolidated contacts, prospects, and customers
           </p>
         </div>
-        <div className="flex items-center gap-4">
-            <div className="relative">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="relative w-full sm:w-auto">
                 <button className="absolute left-4 top-1/2 -translate-y-1/2 text-bodydark2">
                     <MdSearch size={22} />
                 </button>
@@ -66,8 +74,15 @@ export default function ConnectionsPage() {
                 />
             </div>
             <button 
+                onClick={() => setArchivedOpen(true)}
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-lg bg-gray-2 py-2.5 px-6 text-center font-medium text-black hover:bg-gray-3 dark:bg-meta-4 dark:text-white dark:hover:bg-boxdark-2 transition-colors lg:px-6"
+            >
+                <MdArchive size={20} />
+                Archived ({archivedConns.length})
+            </button>
+            <button 
                 onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center justify-center gap-2.5 rounded-lg bg-primary py-2.5 px-6 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10"
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-lg bg-primary py-2.5 px-6 text-center font-medium text-white hover:bg-opacity-90 lg:px-8"
             >
                 <MdAdd size={20} />
                 Add New
@@ -247,6 +262,19 @@ export default function ConnectionsPage() {
               onClick={async () => {
                 const c = menuState.c
                 setMenuState(null)
+                try {
+                  await archiveConnection(c.id, true)
+                  refresh()
+                } catch (e: any) { setErr(e.message) }
+              }}
+              className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-meta-1 hover:bg-meta-1/10"
+            >
+              <MdArchive size={16} /> Archive
+            </button>
+            <button
+              onClick={async () => {
+                const c = menuState.c
+                setMenuState(null)
                 const confirmed = await dialog.confirm('Delete Connection', `Delete ${c.firstName} ${c.lastName}? This cannot be undone.`, { isDestructive: true })
                 if (!confirmed) return
                 
@@ -262,6 +290,42 @@ export default function ConnectionsPage() {
           </div>
         </div>,
         document.body
+      )}
+
+      {/* Archived Connections Modal */}
+      {archivedOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-lg bg-white p-6 shadow-default dark:bg-boxdark">
+            <div className="mb-4 flex items-center justify-between pb-2 border-b border-stroke dark:border-strokedark">
+              <h3 className="text-lg font-bold text-black dark:text-white">Archived Connections</h3>
+              <button onClick={() => setArchivedOpen(false)} className="text-body-color hover:text-black dark:text-bodydark dark:hover:text-white hover:bg-gray-2 dark:hover:bg-meta-4 rounded-full p-1 transition-colors">
+                <MdClose size={24} />
+              </button>
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto pr-2">
+              {archivedConns.length === 0 ? (
+                <p className="text-sm text-body-color text-center py-6">No archived items.</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {archivedConns.map(c => (
+                    <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg bg-gray-2 p-4 dark:bg-meta-4">
+                      <div>
+                        <h4 className="font-semibold text-black dark:text-white">{c.firstName} {c.lastName}</h4>
+                        <p className="text-sm text-body-color mt-1">{c.company || '—'} • {c.email || c.phone || 'No Contact'}</p>
+                      </div>
+                      <button 
+                        onClick={() => onUnarchive(c.id)}
+                        className="rounded bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-opacity-90 transition-colors"
+                      >
+                        Unarchive
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

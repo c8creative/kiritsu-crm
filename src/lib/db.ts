@@ -176,6 +176,15 @@ export async function convertLeadToConnection(leadId: string) {
   return { connection, opportunity }
 }
 
+export async function archiveLead(id: string, archived: boolean = true) {
+  const owner_id = await getSessionUserId()
+  if (!owner_id) throw new Error('Not authenticated')
+  const ref = doc(db, 'leads', id)
+  const snap = await getDoc(ref)
+  if (!snap.exists() || snap.data()?.owner_id !== owner_id) throw new Error('Unauthorized')
+  await updateDoc(ref, { archived, status: archived ? 'archived' : 'new' })
+}
+
 // Connections
 export async function listConnections(): Promise<Connection[]> {
   const owner_id = await getSessionUserId()
@@ -248,6 +257,24 @@ export async function addActivity(connection_id: string, opportunity_id: string 
   })
   const newDoc = await getDoc(docRef)
   return { id: newDoc.id, ...newDoc.data() }
+}
+
+export async function archiveConnection(id: string, archived: boolean = true) {
+  const owner_id = await getSessionUserId()
+  if (!owner_id) throw new Error('Not authenticated')
+  const ref = doc(db, 'connections', id)
+  const snap = await getDoc(ref)
+  if (!snap.exists() || snap.data()?.owner_id !== owner_id) throw new Error('Unauthorized')
+  await updateDoc(ref, { archived })
+}
+
+export async function archiveOpportunity(id: string, archived: boolean = true) {
+  const owner_id = await getSessionUserId()
+  if (!owner_id) throw new Error('Not authenticated')
+  const ref = doc(db, 'opportunities', id)
+  const snap = await getDoc(ref)
+  if (!snap.exists() || snap.data()?.owner_id !== owner_id) throw new Error('Unauthorized')
+  await updateDoc(ref, { archived })
 }
 
 // Opportunities / Pipeline
