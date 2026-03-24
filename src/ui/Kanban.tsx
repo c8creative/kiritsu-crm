@@ -42,6 +42,9 @@ export default function Kanban({
   onMove,
   onFollowUp,
   onArchive,
+  selectedIds,
+  onToggleSelect,
+  onSelectAll,
 }: {
   stages: readonly Stage[]
   itemsByStage: Record<string, any[]>
@@ -49,6 +52,9 @@ export default function Kanban({
   onMove: (id: string, stage: string) => Promise<void>
   onFollowUp: (id: string, date: string | null, note: string | null) => Promise<void>
   onArchive?: (id: string) => Promise<void>
+  selectedIds?: string[]
+  onToggleSelect?: (id: string, e: React.MouseEvent) => void
+  onSelectAll?: (stageKey: string) => void
 }) {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -144,10 +150,20 @@ export default function Kanban({
               className="flex w-full sm:w-[320px] flex-col gap-4 rounded-xl border-2 border-slate-300 bg-transparent px-4 pt-4 pb-6 dark:border-[#2E3A47] dark:bg-[#1A222C]"
             >
               <div className="flex items-center justify-between">
-                <h3 className="font-medium text-black dark:text-white flex items-center gap-2">
-                  <span>{stage.icon}</span>
-                  {stage.label}
-                </h3>
+                <div className="flex items-center gap-3">
+                  {onSelectAll && (
+                    <input
+                      type="checkbox"
+                      checked={items.length > 0 && items.every(it => selectedIds?.includes(it.id))}
+                      onChange={() => onSelectAll(stage.key)}
+                      className="h-4 w-4 cursor-pointer text-primary bg-transparent border-stroke dark:border-strokedark rounded custom-checkbox"
+                    />
+                  )}
+                  <h3 className="font-medium text-black dark:text-white flex items-center gap-2">
+                    <span>{stage.icon}</span>
+                    {stage.label}
+                  </h3>
+                </div>
                 <span className={`inline-flex rounded-full py-0.5 px-2.5 text-sm font-medium ${
                   stage.key === 'new' && items.length > 0 
                     ? 'bg-[#10B981]/20 text-[#10B981]' 
@@ -173,6 +189,8 @@ export default function Kanban({
                         followUpDate={it.next_follow_up_date}
                         followUpNote={it.next_follow_up_note}
                         disabled={busyId === it.id}
+                        selected={selectedIds?.includes(it.id)}
+                        onToggleSelect={onToggleSelect}
                         onFollowUp={async (date, note) => onFollowUp(it.id, date, note)}
                         onMove={onMove}
                         onArchive={onArchive ? async () => onArchive(it.id) : undefined}

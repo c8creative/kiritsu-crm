@@ -16,6 +16,8 @@ export default function SortableCard({
   followUpDate,
   followUpNote,
   disabled,
+  selected,
+  onToggleSelect,
   onFollowUp,
   onMove,
   onArchive,
@@ -30,6 +32,8 @@ export default function SortableCard({
   followUpDate: string | null
   followUpNote: string | null
   disabled?: boolean
+  selected?: boolean
+  onToggleSelect?: (id: string, e: React.MouseEvent) => void
   onFollowUp: (date: string | null, note: string | null) => Promise<void>
   onMove?: (id: string, stage: string) => Promise<void>
   onArchive?: () => Promise<void>
@@ -50,16 +54,28 @@ export default function SortableCard({
     <div
       ref={setNodeRef}
       style={style as any}
-      className="rounded-lg border-2 border-slate-300 bg-white p-4 shadow-sm transition hover:shadow-md hover:border-slate-400 dark:border-[#2E3A47] dark:bg-[#24303F] relative z-10"
+      className={`rounded-lg border-2 ${selected ? 'border-primary dark:border-primary shadow-md' : 'border-slate-300 dark:border-[#2E3A47] hover:border-slate-400'} bg-white p-4 shadow-sm transition hover:shadow-md dark:bg-[#24303F] relative z-10`}
       {...attributes}
       {...listeners}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <div>
-          <h4 className="font-medium text-black dark:text-white leading-tight">{title}</h4>
-          {subtitle && (
-            <p className="text-[10px] uppercase font-bold text-slate-400 mt-1">{subtitle}</p>
+        <div className="flex items-start gap-3">
+          {onToggleSelect && (
+            <input
+              type="checkbox"
+              checked={selected}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onChange={(e) => onToggleSelect(id, e as any)}
+              className="mt-1 h-4 w-4 shrink-0 cursor-pointer text-primary bg-white border-stroke dark:bg-boxdark dark:border-strokedark rounded custom-checkbox"
+            />
           )}
+          <div>
+            <h4 className="font-medium text-black dark:text-white leading-tight">{title}</h4>
+            {subtitle && (
+              <p className="text-[10px] uppercase font-bold text-slate-400 mt-1">{subtitle}</p>
+            )}
+          </div>
         </div>
         <div className="relative">
           <button

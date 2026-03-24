@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { listConnections, archiveConnection, deleteConnection } from '../lib/db'
+import { listConnections, archiveConnection, deleteConnection, updateConnection } from '../lib/db'
 import type { Connection } from '../lib/types'
 import { MdOutlinePeople, MdSearch, MdAdd, MdClose, MdOutlineVisibility, MdOutlineEdit, MdOutlineDelete, MdMoreVert, MdArchive } from 'react-icons/md'
 import ConnectionImport from '../ui/ConnectionImport'
@@ -20,6 +20,8 @@ export default function ConnectionsPage() {
   const [editConn, setEditConn] = useState<Connection | null>(null)
   const [menuState, setMenuState] = useState<{ id: string, x: number, y: number, c: Connection } | null>(null)
   const [archivedOpen, setArchivedOpen] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [busy, setBusy] = useState(false)
   const dialog = useDialog()
   const navigate = useNavigate()
 
@@ -49,6 +51,50 @@ export default function ConnectionsPage() {
     await refresh()
   }
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filtered.length && filtered.length > 0) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(filtered.map(c => c.id))
+    }
+  }
+
+  const onBulkArchive = async () => {
+    const confirmed = await dialog.confirm('Archive Selected', `Are you sure you want to archive ${selectedIds.length} connections?`, { isDestructive: false })
+    if (!confirmed) return
+    setErr(null)
+    setBusy(true)
+    try {
+      await Promise.all(selectedIds.map(id => archiveConnection(id, true)))
+      setSelectedIds([])
+      await refresh()
+    } catch (e: any) {
+      setErr('Failed to archive some items')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const onBulkStatus = async (status: string) => {
+    const confirmed = await dialog.confirm('Update Status', `Change status to ${status.toUpperCase()} for ${selectedIds.length} connections?`, { isDestructive: false })
+    if (!confirmed) return
+    setErr(null)
+    setBusy(true)
+    try {
+      await Promise.all(selectedIds.map(id => updateConnection(id, { status })))
+      setSelectedIds([])
+      await refresh()
+    } catch (e: any) {
+      setErr('Failed to update status on some items')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-7xl">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -60,34 +106,61 @@ export default function ConnectionsPage() {
             Consolidated contacts, prospects, and customers
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="relative w-full sm:w-auto">
-                <button className="absolute left-4 top-1/2 -translate-y-1/2 text-bodydark2">
-                    <MdSearch size={22} />
-                </button>
-                <input
-                    type="text"
-                    className="w-full xl:w-75 rounded-lg border-[1.5px] border-stroke bg-transparent py-2.5 pl-12 pr-5 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    placeholder="Search connections..."
-                />
-            </div>
-            <button 
-                onClick={() => setArchivedOpen(true)}
-                className="inline-flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-lg bg-gray-2 py-2.5 px-6 text-center font-medium text-black hover:bg-gray-3 dark:bg-meta-4 dark:text-white dark:hover:bg-boxdark-2 transition-colors lg:px-6"
+        {selectedIds.length > 0 ? (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-primary/10 border border-primary/20 px-5 py-2.5 rounded-lg shadow-sm w-full lg:w-auto">
+            <span className="text-sm font-semibold text-primary mr-auto">{selectedIds.length} selected</span>
+            <select
+                onChange={(e) => {
+                    if (e.target.value) onBulkStatus(e.target.value);
+                    e.target.value = '';
+                }}
+                className="w-full sm:w-auto rounded-lg border border-stroke bg-white py-1.5 px-4 text-sm font-medium outline-none transition focus:border-primary active:border-primary dark:border-strokedark dark:bg-boxdark"
+                defaultValue=""
+                disabled={busy}
             >
-                <MdArchive size={20} />
-                Archived ({archivedConns.length})
-            </button>
-            <button 
-                onClick={() => setIsModalOpen(true)}
-                className="inline-flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-lg bg-primary py-2.5 px-6 text-center font-medium text-white hover:bg-opacity-90 lg:px-8"
+                <option value="" disabled>Set Status...</option>
+                <option value="prospect">Prospect</option>
+                <option value="one-time">One-Time</option>
+                <option value="dnc">DNC</option>
+            </select>
+            <button
+              onClick={onBulkArchive}
+              disabled={busy}
+              className="inline-flex w-full sm:w-auto items-center justify-center rounded-lg border border-meta-1/50 bg-transparent py-1.5 px-4 text-center font-medium text-meta-1 hover:bg-meta-1 hover:text-white transition-colors text-sm"
             >
-                <MdAdd size={20} />
-                Add New
+              Archive Selected
             </button>
-        </div>
+          </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="relative w-full sm:w-auto">
+                  <button className="absolute left-4 top-1/2 -translate-y-1/2 text-bodydark2">
+                      <MdSearch size={22} />
+                  </button>
+                  <input
+                      type="text"
+                      className="w-full xl:w-75 rounded-lg border-[1.5px] border-stroke bg-transparent py-2.5 pl-12 pr-5 font-medium outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
+                      value={q}
+                      onChange={(e) => setQ(e.target.value)}
+                      placeholder="Search connections..."
+                  />
+              </div>
+              <button 
+                  onClick={() => setArchivedOpen(true)}
+                  className="inline-flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-lg border border-stroke bg-transparent py-2.5 px-6 text-center font-medium text-black hover:bg-gray-2 dark:border-strokedark dark:text-white dark:hover:bg-meta-4 transition-colors lg:px-6"
+              >
+                  <MdArchive size={20} />
+                  Archived ({archivedConns.length})
+              </button>
+              <button 
+                  onClick={() => setIsModalOpen(true)}
+                  className="inline-flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-lg bg-primary py-2.5 px-6 text-center font-medium text-white hover:bg-opacity-90 lg:px-8"
+              >
+                  <MdAdd size={20} />
+                  Add New
+              </button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-6 mb-6">
@@ -107,7 +180,15 @@ export default function ConnectionsPage() {
           <table className="w-full table-auto">
             <thead>
               <tr className="bg-gray-2 text-left dark:bg-meta-4">
-                <th className="py-4 px-4 font-bold text-black dark:text-white xl:pl-8 uppercase text-xs">
+                <th className="py-4 px-4 w-12 text-center">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 cursor-pointer text-primary bg-white border-stroke dark:bg-boxdark dark:border-strokedark rounded custom-checkbox"
+                    checked={selectedIds.length > 0 && selectedIds.length === filtered.length}
+                    onChange={toggleSelectAll}
+                  />
+                </th>
+                <th className="py-4 px-2 font-bold text-black dark:text-white uppercase text-xs">
                   Name
                 </th>
                 <th className="py-4 px-4 font-bold text-black dark:text-white uppercase text-xs">
@@ -135,9 +216,17 @@ export default function ConnectionsPage() {
                       setViewId(c.id)
                     }
                   }}
-                  className={`cursor-pointer hover:bg-gray-2 dark:hover:bg-meta-4 transition-colors ${key === filtered.length - 1 ? '' : 'border-b border-stroke dark:border-strokedark'}`}
+                  className={`cursor-pointer hover:bg-gray-2 dark:hover:bg-meta-4 transition-colors ${selectedIds.includes(c.id) ? 'bg-primary/5 dark:bg-primary/5' : ''} ${key === filtered.length - 1 ? '' : 'border-b border-stroke dark:border-strokedark'}`}
                 >
-                  <td className="py-5 px-4 xl:pl-8">
+                  <td className="py-5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 cursor-pointer text-primary bg-white border-stroke dark:bg-boxdark dark:border-strokedark rounded custom-checkbox"
+                      checked={selectedIds.includes(c.id)}
+                      onChange={() => toggleSelect(c.id)}
+                    />
+                  </td>
+                  <td className="py-5 px-2">
                     <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                             {(c.firstName?.[0] || '') + (c.lastName?.[0] || '')}

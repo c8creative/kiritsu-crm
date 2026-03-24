@@ -279,7 +279,7 @@ export async function archiveOpportunity(id: string, archived: boolean = true) {
 
 // Opportunities / Pipeline
 export const PIPELINE_STAGES = [
-  { key: 'new', label: 'New', icon: '✨' },
+  { key: 'new', label: 'New', icon: '🏁' },
   { key: 'contacted', label: 'Contacted', icon: '📞' },
   { key: 'walkthrough', label: 'Quote Pending', icon: '🗓️' },
   { key: 'quote_sent', label: 'Quote Sent', icon: '📄' },
