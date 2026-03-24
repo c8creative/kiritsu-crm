@@ -39,7 +39,7 @@ export default function AddConnectionModal({ isOpen, onClose, onSuccess }: Props
         country: String(fd.get('country') || '').trim() || null,
         timeZone: String(fd.get('timeZone') || '').trim() || null,
         notes: String(fd.get('notes') || '').trim() || null,
-        status: 'prospect',
+        status: String(fd.get('status') || 'prospect') as any,
       })
       onSuccess()
       onClose()
@@ -92,11 +92,18 @@ export default function AddConnectionModal({ isOpen, onClose, onSuccess }: Props
               <label className="mb-2 block text-sm font-medium text-black dark:text-white">Company</label>
               <input name="company" className="w-full rounded border-[1.5px] border-stroke bg-transparent py-2.5 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" />
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-1">
               <label className="mb-2 block text-sm font-medium text-black dark:text-white">Website</label>
               <input name="website" className="w-full rounded border-[1.5px] border-stroke bg-transparent py-2.5 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary" placeholder="example.com" />
             </div>
-            
+            <div className="md:col-span-1">
+              <label className="mb-2 block text-sm font-medium text-black dark:text-white">Status</label>
+              <select name="status" defaultValue="prospect" className="w-full rounded border-[1.5px] border-stroke bg-transparent py-2.5 px-4 outline-none transition focus:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary">
+                <option value="prospect">Prospect</option>
+                <option value="one-time">One-Time</option>
+                <option value="dnc">DNC (Do Not Contact)</option>
+              </select>
+            </div>
             <div className="md:col-span-2 border-t border-stroke pt-4 dark:border-strokedark mt-2">
                 <h4 className="font-medium text-black dark:text-white mb-4">Location Info</h4>
             </div>

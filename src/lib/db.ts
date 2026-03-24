@@ -246,10 +246,10 @@ export async function addActivity(connection_id: string, opportunity_id: string 
 export const PIPELINE_STAGES = [
   { key: 'new', label: 'New', icon: '✨' },
   { key: 'contacted', label: 'Contacted', icon: '📞' },
-  { key: 'walkthrough', label: 'Walkthrough Scheduled', icon: '🗓️' },
+  { key: 'walkthrough', label: 'Quote Pending', icon: '🗓️' },
   { key: 'quote_sent', label: 'Quote Sent', icon: '📄' },
   { key: 'negotiation', label: 'Negotiation', icon: '🤝' },
-  { key: 'won', label: 'Won (Recurring)', icon: '✅' },
+  { key: 'won', label: 'Won', icon: '✅' },
   { key: 'lost', label: 'Lost / Not Now', icon: '❌' },
 ] as const
 
