@@ -10,6 +10,8 @@ export default function InboxPage() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [leadName, setLeadName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
 
   const refresh = async () => {
     setErr(null)
@@ -34,13 +36,15 @@ export default function InboxPage() {
     const fd = new FormData(form)
 
     const source = (String(fd.get('source') || 'door') as LeadSource) ?? 'door'
+    const fName = String(fd.get('firstName') || '').trim()
+    const lName = String(fd.get('lastName') || '').trim()
     const name = String(fd.get('name') || '').trim()
     const phoneRaw = String(fd.get('phone') || '').trim()
     const emailRaw = String(fd.get('email') || '').trim()
     const addressRaw = String(fd.get('address_text') || '').trim()
 
-    if (!name) {
-      setErr('Business name is required.')
+    if (!name && !fName && !lName) {
+      setErr('First, Last, or Business name is required.')
       return
     }
 
@@ -48,6 +52,8 @@ export default function InboxPage() {
     try {
       await createLead({
         source,
+        firstName: fName.length ? fName : null,
+        lastName: lName.length ? lName : null,
         name,
         phone: phoneRaw.length ? phoneRaw : null,
         email: emailRaw.length ? emailRaw : null,
@@ -56,6 +62,8 @@ export default function InboxPage() {
       } as any)
 
       setLeadName('')
+      setFirstName('')
+      setLastName('')
       form.reset()
       await refresh()
     } catch (e: any) {
@@ -116,7 +124,29 @@ export default function InboxPage() {
                     onChange={(e) => setLeadName(e.target.value)}
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                     placeholder="Restaurant / Business"
-                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-5">
+                <div className="w-full sm:w-1/2">
+                  <label className="mb-2.5 block text-black dark:text-white">First Name</label>
+                  <input
+                    name="firstName"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
+                    placeholder="John"
+                  />
+                </div>
+                <div className="w-full sm:w-1/2">
+                  <label className="mb-2.5 block text-black dark:text-white">Last Name</label>
+                  <input
+                    name="lastName"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full rounded border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
+                    placeholder="Doe"
                   />
                 </div>
               </div>
@@ -145,7 +175,7 @@ export default function InboxPage() {
               <div className="flex flex-col sm:flex-row-reverse sm:items-center justify-between gap-4 mt-2 text-right">
                 <button 
                   className="flex w-full sm:w-auto justify-center rounded bg-primary py-3 px-8 font-medium text-gray hover:bg-opacity-90 disabled:bg-slate-400 disabled:cursor-not-allowed" 
-                  disabled={busy || !leadName.trim()}
+                  disabled={busy || (!leadName.trim() && !firstName.trim() && !lastName.trim())}
                 >
                   {busy ? 'Adding…' : 'Add Lead'}
                 </button>

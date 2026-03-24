@@ -115,7 +115,9 @@ export async function createLead(input: Omit<Lead, 'id'|'owner_id'|'created_at'>
   const docRef = await addDoc(collection(db, 'leads'), {
     owner_id,
     source: input.source,
-    name: input.name,
+    firstName: input.firstName ?? null,
+    lastName: input.lastName ?? null,
+    name: input.name ?? '',
     phone: input.phone,
     email: input.email,
     address_text: input.address_text,
@@ -135,15 +137,21 @@ export async function convertLeadToConnection(leadId: string) {
   if (!leadSnap.exists()) throw new Error('Lead not found')
   const lead = leadSnap.data() as Lead
 
-  // Simple name splitting
-  const parts = (lead.name || '').trim().split(/\s+/)
-  const firstName = parts[0] || ''
-  const lastName = parts.slice(1).join(' ')
+  let firstName = lead.firstName || ''
+  let lastName = lead.lastName || ''
+
+  if (!firstName && !lastName) {
+    // legacy fallback
+    const parts = (lead.name || '').trim().split(/\s+/)
+    firstName = parts[0] || ''
+    lastName = parts.slice(1).join(' ')
+  }
 
   const connRef = await addDoc(collection(db, 'connections'), {
     owner_id,
     firstName,
     lastName,
+    company: lead.name || null,
     email: lead.email,
     phone: lead.phone,
     street: lead.address_text,

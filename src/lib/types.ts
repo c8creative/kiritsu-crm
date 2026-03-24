@@ -3,6 +3,8 @@ export type Lead = {
   id: string
   owner_id: string
   source: string
+  firstName: string | null
+  lastName: string | null
   name: string
   phone: string | null
   email: string | null
