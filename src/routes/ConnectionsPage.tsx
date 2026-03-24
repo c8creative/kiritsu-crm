@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { listConnections } from '../lib/db'
 import type { Connection } from '../lib/types'
 import { MdOutlinePeople, MdSearch, MdAdd, MdClose, MdOutlineVisibility, MdOutlineEdit, MdOutlineDelete, MdMoreVert } from 'react-icons/md'
@@ -21,6 +21,7 @@ export default function ConnectionsPage() {
   const [editConn, setEditConn] = useState<Connection | null>(null)
   const [menuState, setMenuState] = useState<{ id: string, x: number, y: number, c: Connection } | null>(null)
   const dialog = useDialog()
+  const navigate = useNavigate()
 
   const refresh = () => {
     listConnections().then(setConnections).catch((e) => setErr(e.message))
@@ -98,31 +99,38 @@ export default function ConnectionsPage() {
                   Company
                 </th>
                 <th className="py-4 px-4 font-bold text-black dark:text-white uppercase text-xs">
-                  Title
+                  Phone Number
                 </th>
                 <th className="py-4 px-4 font-bold text-black dark:text-white uppercase text-xs">
                   Status
                 </th>
                 <th className="py-4 px-4 font-bold text-black dark:text-white uppercase text-xs">
-                  Actions
+                  <span className="sr-only">Actions</span>
                 </th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((c, key) => (
-                <tr key={c.id} className={key === filtered.length - 1 ? '' : 'border-b border-stroke dark:border-strokedark'}>
+                <tr 
+                  key={c.id} 
+                  onClick={() => {
+                    if (window.innerWidth < 1024) {
+                      navigate(`/connections/${c.id}`)
+                    } else {
+                      setViewId(c.id)
+                    }
+                  }}
+                  className={`cursor-pointer hover:bg-gray-2 dark:hover:bg-meta-4 transition-colors ${key === filtered.length - 1 ? '' : 'border-b border-stroke dark:border-strokedark'}`}
+                >
                   <td className="py-5 px-4 xl:pl-8">
                     <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                             {(c.firstName?.[0] || '') + (c.lastName?.[0] || '')}
                         </div>
                         <div>
-                            <button onClick={() => setViewId(c.id)} className="text-black dark:text-white font-semibold hover:text-primary dark:hover:text-primary transition-colors hidden lg:block text-left">
+                            <p className="text-black dark:text-white font-semibold">
                                 {c.firstName} {c.lastName}
-                            </button>
-                            <Link to={`/connections/${c.id}`} className="text-black dark:text-white font-semibold hover:text-primary dark:hover:text-primary transition-colors block lg:hidden">
-                                {c.firstName} {c.lastName}
-                            </Link>
+                            </p>
                             <p className="text-xs text-bodydark2">{c.email}</p>
                         </div>
                     </div>
@@ -131,8 +139,18 @@ export default function ConnectionsPage() {
                     <p className="text-black dark:text-white font-medium">{c.company || '—'}</p>
                     {c.website && <p className="text-xs text-bodydark2">{c.website}</p>}
                   </td>
-                  <td className="py-5 px-4">
-                    <p className="text-black dark:text-white">{c.title || '—'}</p>
+                  <td className="py-5 px-4 font-medium">
+                    {c.phone || c.mobile ? (
+                      <a 
+                        href={`tel:${c.phone || c.mobile}`} 
+                        onClick={(e) => e.stopPropagation()} 
+                        className="text-primary hover:underline"
+                      >
+                         {c.phone || c.mobile}
+                      </a>
+                    ) : (
+                      <span className="text-bodydark2">—</span>
+                    )}
                   </td>
                   <td className="py-5 px-4">
                     <span className={`inline-flex rounded-full bg-opacity-10 py-1 px-3 text-sm font-medium capitalize ${
@@ -144,23 +162,12 @@ export default function ConnectionsPage() {
                     </span>
                   </td>
                   <td className="py-5 px-4">
-                    <div className="flex items-center gap-2">
-                      {/* Quick View — opens detail modal on desktop, navigates on mobile */}
-                      <button
-                        onClick={() => setViewId(c.id)}
-                        title="Quick View"
-                        className="hidden lg:inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary hover:text-white transition-colors"
-                      >
-                        <MdOutlineVisibility size={16} /> Quick View
-                      </button>
-                      <Link to={`/connections/${c.id}`} title="Quick View" className="inline-flex lg:hidden items-center justify-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary hover:text-white transition-colors">
-                        <MdOutlineVisibility size={16} /> Quick View
-                      </Link>
-
+                    <div className="flex items-center justify-end">
                       {/* Options Dropdown */}
                       <div className="relative">
                         <button
                           onClick={(e) => {
+                            e.stopPropagation()
                             if (menuState?.id === c.id) {
                               setMenuState(null)
                             } else {
